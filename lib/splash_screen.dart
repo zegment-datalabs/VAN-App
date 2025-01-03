@@ -29,13 +29,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+             Icon(
               Icons.shopping_bag, // Replace with your logo/icon
               size: 100.0,
               color: Colors.white,
             ),
-            const SizedBox(height: 20),
-            const Text(
+             SizedBox(height: 20),
+             Text(
               'Welcome to MyApp',
               style: TextStyle(
                 fontSize: 24,
