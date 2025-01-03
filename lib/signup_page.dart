@@ -40,116 +40,162 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign Up Page'),
+        backgroundColor: Colors.teal,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Create an Account',
+                  style: TextStyle(
+                    fontSize: 28.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal[700],
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _emailPhoneController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                const SizedBox(height: 40.0),
+                _buildTextField(
+                  controller: _nameController,
+                  labelText: 'Full Name',
+                  icon: Icons.person,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20.0),
+                _buildTextField(
+                  controller: _emailPhoneController,
                   labelText: 'Email/Phone Number',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  icon: Icons.email,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email or phone number';
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value) &&
+                        !RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+                      return 'Please enter a valid email or phone number';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email or phone number';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value) &&
-                      !RegExp(r'^[0-9]{10}\$').hasMatch(value)) {
-                    return 'Please enter a valid email or phone number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                const SizedBox(height: 20.0),
+                _buildTextField(
+                  controller: _passwordController,
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
+                  icon: Icons.lock,
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters long';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters long';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                const SizedBox(height: 20.0),
+                _buildTextField(
+                  controller: _confirmPasswordController,
                   labelText: 'Confirm Password',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_outline),
+                  icon: Icons.lock_outline,
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24.0),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
+                const SizedBox(height: 40.0),
+                ElevatedButton(
                   onPressed: _signUp,
-                  child: const Text('Sign Up'),
-                ),
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Already have an account? "),
-                  GestureDetector(
-                    onTap: _navigateToSignIn,
-                    child: const Text(
-                      "Sign In",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14.0),
+                    backgroundColor: Colors.teal, // Use 'backgroundColor' instead of 'primary'
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    minimumSize: Size(double.infinity, 50),
+                    
+                  ),
+                  child: const Text(
+                    'Sign Up',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.white,
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 40.0), // Increased space
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Already have an account? ",
+                      style: TextStyle(fontSize: 18.0),
+                    ),
+                    GestureDetector(
+                      onTap: _navigateToSignIn,
+                      child: const Text(
+                        "Sign In",
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18.0, // Increased size for "Sign In"
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: const TextStyle(fontSize: 16.0, color: Colors.teal),
+        prefixIcon: Icon(icon, color: Colors.teal),
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: Colors.teal),
+        ),
+      ),
+      validator: validator,
     );
   }
 
