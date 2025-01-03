@@ -29,6 +29,13 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  void _navigateToSignIn() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,6 +128,23 @@ class _SignUpPageState extends State<SignUpPage> {
                   onPressed: _signUp,
                   child: const Text('Sign Up'),
                 ),
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Already have an account? "),
+                  GestureDetector(
+                    onTap: _navigateToSignIn,
+                    child: const Text(
+                      "Sign In",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
