@@ -55,7 +55,8 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email or phone number';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}\$').hasMatch(value)) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}\$')
+                        .hasMatch(value)) {
                       return 'Please enter a valid email or phone number';
                     }
                     return null;
@@ -131,8 +132,10 @@ class _LoginPageState extends State<LoginPage> {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      style: TextStyle(color: Colors.teal), // Set the text color
       decoration: InputDecoration(
         labelText: labelText,
+        labelStyle: TextStyle(color: Colors.teal), // Set the label text color
         prefixIcon: Icon(icon, color: Colors.teal),
         filled: true,
         fillColor: Colors.grey[200],
