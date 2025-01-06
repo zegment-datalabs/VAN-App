@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -11,24 +12,51 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailPhoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  void _signUp() {
+  // Sign Up Function
+  void _signUp() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Signed up as ${_nameController.text}')),
-      );
+      try {
+        // Firebase Authentication for Sign-Up
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-      // Navigate to Login Page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-Up Successful!')),
+        );
+
+        // Navigate to Login Page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+
+        // Error Handling
+        if (e.code == 'email-already-in-use') {
+          errorMessage = 'This email is already in use.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Invalid email address.';
+        } else if (e.code == 'weak-password') {
+          errorMessage = 'Password is too weak.';
+        } else {
+          errorMessage = 'An error occurred. Please try again.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 
+  // Navigate to Login Page
   void _navigateToSignIn() {
     Navigator.push(
       context,
@@ -72,17 +100,16 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 20.0),
                 _buildTextField(
-                  controller: _emailPhoneController,
-                  labelText: 'Email/Phone Number',
+                  controller: _emailController,
+                  labelText: 'Email Address',
                   icon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email or phone number';
+                      return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value) &&
-                        !RegExp(r'^[0-9]{10}$').hasMatch(value)) {
-                      return 'Please enter a valid email or phone number';
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -124,12 +151,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14.0),
-                    backgroundColor: Colors.teal, // Use 'backgroundColor' instead of 'primary'
+                    backgroundColor: Colors.teal,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
-                    minimumSize: Size(double.infinity, 50),
-                    
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                   child: const Text(
                     'Sign Up',
@@ -139,7 +165,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 40.0), // Increased space
+                const SizedBox(height: 40.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -154,7 +180,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         style: TextStyle(
                           color: Colors.teal,
                           fontWeight: FontWeight.bold,
-                          fontSize: 18.0, // Increased size for "Sign In"
+                          fontSize: 18.0,
                         ),
                       ),
                     ),
@@ -182,17 +208,12 @@ class _SignUpPageState extends State<SignUpPage> {
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: const TextStyle(fontSize: 16.0, color: Colors.teal),
         prefixIcon: Icon(icon, color: Colors.teal),
         filled: true,
         fillColor: Colors.grey[200],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
           borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.teal),
         ),
       ),
       validator: validator,
@@ -202,7 +223,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailPhoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
