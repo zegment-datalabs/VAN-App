@@ -16,6 +16,9 @@ class _SignUpPageState extends State<SignUpPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  bool _isPasswordVisible = false; // Track visibility of password
+  bool _isConfirmPasswordVisible = false; // Track visibility of confirm password
+
   // Sign Up Function
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
@@ -119,7 +122,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _passwordController,
                   labelText: 'Password',
                   icon: Icons.lock,
-                  obscureText: true,
+                  obscureText: !_isPasswordVisible,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -129,13 +132,23 @@ class _SignUpPageState extends State<SignUpPage> {
                     }
                     return null;
                   },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 20.0),
                 _buildTextField(
                   controller: _confirmPasswordController,
                   labelText: 'Confirm Password',
                   icon: Icons.lock_outline,
-                  obscureText: true,
+                  obscureText: !_isConfirmPasswordVisible,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
@@ -145,6 +158,16 @@ class _SignUpPageState extends State<SignUpPage> {
                     }
                     return null;
                   },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 40.0),
                 ElevatedButton(
@@ -201,6 +224,7 @@ class _SignUpPageState extends State<SignUpPage> {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     String? Function(String?)? validator,
+    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
@@ -209,6 +233,7 @@ class _SignUpPageState extends State<SignUpPage> {
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.teal),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.grey[200],
         border: OutlineInputBorder(
