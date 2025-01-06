@@ -12,7 +12,7 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -23,11 +23,39 @@ class _SignUpPageState extends State<SignUpPage> {
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Firebase Authentication for Sign-Up
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        final inputText = _emailOrPhoneController.text.trim();
+
+        if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
+          // Sign up with email
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: inputText,
+            password: _passwordController.text.trim(),
+          );
+        } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
+          // Sign up with phone
+          await FirebaseAuth.instance.verifyPhoneNumber(
+            phoneNumber: inputText,
+            verificationCompleted: (PhoneAuthCredential credential) async {
+              await FirebaseAuth.instance.signInWithCredential(credential);
+            },
+            verificationFailed: (FirebaseAuthException e) {
+              throw e;
+            },
+            codeSent: (String verificationId, int? resendToken) async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('OTP sent to phone number!')),
+              );
+            },
+            codeAutoRetrievalTimeout: (String verificationId) {
+              // Handle timeout
+            },
+          );
+        } else {
+          throw FirebaseAuthException(
+            code: 'invalid-input',
+            message: 'Please enter a valid email address or phone number',
+          );
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign-Up Successful!')),
@@ -103,16 +131,17 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 20.0),
                 _buildTextField(
-                  controller: _emailController,
-                  labelText: 'Email Address',
-                  icon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _emailOrPhoneController,
+                  labelText: 'Email or Phone Number',
+                  icon: Icons.phone,
+                  keyboardType: TextInputType.text,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your email or phone number';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'Please enter a valid email';
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value) &&
+                        !RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}\$').hasMatch(value)) {
+                      return 'Please enter a valid email address or phone number';
                     }
                     return null;
                   },
@@ -248,7 +277,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
+    _emailOrPhoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
