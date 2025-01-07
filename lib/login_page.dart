@@ -1,6 +1,75 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 
+// Forgot Password Page
+class ForgotPasswordPage extends StatelessWidget {
+  const ForgotPasswordPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final TextEditingController _emailController = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Forgot Password'),
+        backgroundColor: Colors.teal,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Enter your email to reset your password.',
+              style: TextStyle(fontSize: 16.0, color: Colors.grey),
+            ),
+            const SizedBox(height: 20.0),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                prefixIcon: const Icon(Icons.email, color: Colors.teal),
+                filled: true,
+                fillColor: Colors.grey[200],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                  borderSide: const BorderSide(color: Colors.teal),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20.0),
+            ElevatedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Password reset link sent to ${_emailController.text}')),
+                );
+                Navigator.pop(context); // Go back to login page
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                padding: const EdgeInsets.symmetric(vertical: 14.0),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+              ),
+              child: const Text(
+                'Send Reset Link',
+                style: TextStyle(fontSize: 16.0, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Login Page
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -78,7 +147,24 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 40.0),
+                const SizedBox(height: 20.0),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Colors.teal),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20.0),
                 ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
@@ -132,10 +218,10 @@ class _LoginPageState extends State<LoginPage> {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.teal), // Set the text color
+      style: const TextStyle(color: Colors.teal),
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: const TextStyle(color: Colors.teal), // Set the label text color
+        labelStyle: const TextStyle(color: Colors.teal),
         prefixIcon: Icon(icon, color: Colors.teal),
         filled: true,
         fillColor: Colors.grey[200],

@@ -96,7 +96,7 @@ class _SignUpPageState extends State<SignUpPage> {
             password: _passwordController.text.trim(),
           );
         } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
-          // Sign up with phone
+          // Sign up with phone (no changes needed for phone sign-up)
           await FirebaseAuth.instance.verifyPhoneNumber(
             phoneNumber: inputText,
             verificationCompleted: (PhoneAuthCredential credential) async {
@@ -132,8 +132,11 @@ class _SignUpPageState extends State<SignUpPage> {
           'profileImageUrl': profileImageUrl,
         });
 
+        // Send email verification
+        await userCredential.user!.sendEmailVerification();
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign-Up Successful!')),
+          const SnackBar(content: Text('Sign-Up Successful! Please verify your email.')),
         );
 
         // Navigate to Login Page
