@@ -25,7 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
-  // Function to pick an image from camera or gallery
+  // Function to pick an image from camera, gallery, or remove the current photo
   Future<void> _pickImage() async {
     showModalBottomSheet(
       context: context,
@@ -60,6 +60,17 @@ class _SignUpPageState extends State<SignUpPage> {
                   Navigator.pop(context);
                 },
               ),
+              if (_selectedImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text('Remove Profile Photo'),
+                  onTap: () {
+                    setState(() {
+                      _selectedImage = null;
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
             ],
           ),
         );
@@ -90,13 +101,11 @@ class _SignUpPageState extends State<SignUpPage> {
         UserCredential userCredential;
 
         if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          // Sign up with email
           userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
             email: inputText,
             password: _passwordController.text.trim(),
           );
         } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
-          // Sign up with phone (no changes needed for phone sign-up)
           await FirebaseAuth.instance.verifyPhoneNumber(
             phoneNumber: inputText,
             verificationCompleted: (PhoneAuthCredential credential) async {
@@ -110,9 +119,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SnackBar(content: Text('OTP sent to phone number!')),
               );
             },
-            codeAutoRetrievalTimeout: (String verificationId) {
-              // Handle timeout
-            },
+            codeAutoRetrievalTimeout: (String verificationId) {},
           );
           return;
         } else {
@@ -125,21 +132,18 @@ class _SignUpPageState extends State<SignUpPage> {
         final userId = userCredential.user!.uid;
         final profileImageUrl = await _uploadImage(userId);
 
-        // Save user details to Firestore
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'name': _nameController.text.trim(),
           'emailOrPhone': inputText,
           'profileImageUrl': profileImageUrl,
         });
 
-        // Send email verification
         await userCredential.user!.sendEmailVerification();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign-Up Successful! Please verify your email.')),
         );
 
-        // Navigate to Login Page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -147,7 +151,6 @@ class _SignUpPageState extends State<SignUpPage> {
       } on FirebaseAuthException catch (e) {
         String errorMessage;
 
-        // Error Handling
         if (e.code == 'email-already-in-use') {
           errorMessage = 'This email is already in use.';
         } else if (e.code == 'invalid-email') {
@@ -204,7 +207,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         ? FileImage(_selectedImage!)
                         : const AssetImage('assets/default_profile.png') as ImageProvider,
                     child: _selectedImage == null
-                        ? const Icon(Icons.camera_alt, size: 50, color: Colors.white)
+                        ? const Icon(Icons.person, size: 90, color: Colors.white)
                         : null,
                   ),
                 ),
