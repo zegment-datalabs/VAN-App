@@ -300,7 +300,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20.0),
+    /*--            const SizedBox(height: 20.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -329,13 +329,16 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _buildTextField({
++
+\]['POIUJYHTGREFDWSQEDFHG]
+              ]
+              ]'
+
     required TextEditingController controller,
     required String labelText,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
-    bool obscureText = false,
-    String? Function(String?)? validator,
+    bool obscur=-098765432RTY\    String? Function(String?)? validator,/123451`1q2 `
     Widget? suffixIcon,
   }) {
     return TextFormField(
