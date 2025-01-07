@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -16,15 +20,78 @@ class _SignUpPageState extends State<SignUpPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Sign Up Function
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  // Function to pick an image from camera or gallery
+  Future<void> _pickImage() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Pick from Gallery'),
+                onTap: () async {
+                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                  if (pickedFile != null) {
+                    setState(() {
+                      _selectedImage = File(pickedFile.path);
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a Photo'),
+                onTap: () async {
+                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                  if (pickedFile != null) {
+                    setState(() {
+                      _selectedImage = File(pickedFile.path);
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Function to upload image to Firebase Storage and get URL
+  Future<String?> _uploadImage(String userId) async {
+    if (_selectedImage == null) return null;
+
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('user_profiles/$userId/${DateTime.now().toIso8601String()}');
+      final uploadTask = await storageRef.putFile(_selectedImage!);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Sign-Up Function
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
       try {
         final inputText = _emailOrPhoneController.text.trim();
+        UserCredential userCredential;
 
         if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
           // Sign up with email
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
             email: inputText,
             password: _passwordController.text.trim(),
           );
@@ -33,7 +100,7 @@ class _SignUpPageState extends State<SignUpPage> {
           await FirebaseAuth.instance.verifyPhoneNumber(
             phoneNumber: inputText,
             verificationCompleted: (PhoneAuthCredential credential) async {
-              await FirebaseAuth.instance.signInWithCredential(credential);
+              userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
             },
             verificationFailed: (FirebaseAuthException e) {
               throw e;
@@ -47,12 +114,23 @@ class _SignUpPageState extends State<SignUpPage> {
               // Handle timeout
             },
           );
+          return;
         } else {
           throw FirebaseAuthException(
             code: 'invalid-input',
             message: 'Please enter a valid email address or phone number',
           );
         }
+
+        final userId = userCredential.user!.uid;
+        final profileImageUrl = await _uploadImage(userId);
+
+        // Save user details to Firestore
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'name': _nameController.text.trim(),
+          'emailOrPhone': inputText,
+          'profileImageUrl': profileImageUrl,
+        });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign-Up Successful!')),
@@ -114,7 +192,20 @@ class _SignUpPageState extends State<SignUpPage> {
                     color: Colors.teal[700],
                   ),
                 ),
-                const SizedBox(height: 40.0),
+                const SizedBox(height: 20.0),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _selectedImage != null
+                        ? FileImage(_selectedImage!)
+                        : const AssetImage('assets/default_profile.png') as ImageProvider,
+                    child: _selectedImage == null
+                        ? const Icon(Icons.camera_alt, size: 50, color: Colors.white)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 20.0),
                 _buildTextField(
                   controller: _nameController,
                   labelText: 'Full Name',
@@ -131,14 +222,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _emailOrPhoneController,
                   labelText: 'Email or Phone Number',
                   icon: Icons.phone,
-                  keyboardType: TextInputType.text,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email or phone number';
-                    }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value) &&
-                        !RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}\$').hasMatch(value)) {
-                      return 'Please enter a valid email address or phone number';
                     }
                     return null;
                   },
@@ -148,7 +234,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _passwordController,
                   labelText: 'Password',
                   icon: Icons.lock,
-                  obscureText: true,
+                  obscureText: !_isPasswordVisible,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -158,13 +244,23 @@ class _SignUpPageState extends State<SignUpPage> {
                     }
                     return null;
                   },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 20.0),
                 _buildTextField(
                   controller: _confirmPasswordController,
                   labelText: 'Confirm Password',
                   icon: Icons.lock_outline,
-                  obscureText: true,
+                  obscureText: !_isConfirmPasswordVisible,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
@@ -174,6 +270,16 @@ class _SignUpPageState extends State<SignUpPage> {
                     }
                     return null;
                   },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 40.0),
                 ElevatedButton(
@@ -194,7 +300,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 40.0),
+                const SizedBox(height: 20.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -230,6 +336,7 @@ class _SignUpPageState extends State<SignUpPage> {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     String? Function(String?)? validator,
+    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
@@ -238,6 +345,7 @@ class _SignUpPageState extends State<SignUpPage> {
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.teal),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.grey[200],
         border: OutlineInputBorder(
