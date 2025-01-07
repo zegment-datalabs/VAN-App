@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
-                    minimumSize: Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                   child: const Text(
                     'Login',
@@ -132,10 +132,10 @@ class _LoginPageState extends State<LoginPage> {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      style: TextStyle(color: Colors.teal), // Set the text color
+      style: const TextStyle(color: Colors.teal), // Set the text color
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: TextStyle(color: Colors.teal), // Set the label text color
+        labelStyle: const TextStyle(color: Colors.teal), // Set the label text color
         prefixIcon: Icon(icon, color: Colors.teal),
         filled: true,
         fillColor: Colors.grey[200],
