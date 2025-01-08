@@ -1,10 +1,14 @@
+
+
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+
 import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';  // Add this import
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -138,6 +142,12 @@ class _SignUpPageState extends State<SignUpPage> {
           'profileImageUrl': profileImageUrl,
         });
 
+        // Save user data to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('emailPhone', inputText);
+        prefs.setString('profilePicPath', profileImageUrl ?? 'default-avatar-url');
+        prefs.setBool('isLoggedIn', true);
+
         await userCredential.user!.sendEmailVerification();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,9 +278,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   icon: Icons.lock_outline,
                   obscureText: !_isConfirmPasswordVisible,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
                     if (value != _passwordController.text) {
                       return 'Passwords do not match';
                     }
@@ -287,43 +294,29 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                   ),
                 ),
-                const SizedBox(height: 40.0),
+                const SizedBox(height: 20.0),
                 ElevatedButton(
                   onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14.0),
+                    minimumSize: const Size(double.infinity, 50),
                     backgroundColor: Colors.teal,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    minimumSize: const Size(double.infinity, 50),
                   ),
                   child: const Text(
                     'Sign Up',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 18.0, color: Colors.white),
                   ),
                 ),
-                const SizedBox(height: 20.0),
+                const SizedBox(height: 10.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Already have an account? ",
-                      style: TextStyle(fontSize: 18.0),
-                    ),
-                    GestureDetector(
-                      onTap: _navigateToSignIn,
-                      child: const Text(
-                        "Sign In",
-                        style: TextStyle(
-                          color: Colors.teal,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18.0,
-                        ),
-                      ),
+                    const Text('Already have an account?'),
+                    TextButton(
+                      onPressed: _navigateToSignIn,
+                      child: const Text('Sign In'),
                     ),
                   ],
                 ),
@@ -339,36 +332,20 @@ class _SignUpPageState extends State<SignUpPage> {
     required TextEditingController controller,
     required String labelText,
     required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     String? Function(String?)? validator,
     Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: keyboardType,
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
-        prefixIcon: Icon(icon, color: Colors.teal),
+        prefixIcon: Icon(icon),
         suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.grey[200],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide.none,
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: validator,
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailOrPhoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
   }
 }

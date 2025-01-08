@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:van_app_demo/homepage.dart';
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({super.key});
@@ -12,39 +13,38 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Books', 'icon': Icons.book},
       {'title': 'Shoes', 'icon': Icons.run_circle},
       {'title': 'Groceries', 'icon': Icons.local_grocery_store},
-      {'title': 'Furniture', 'icon': Icons.chair},
       {'title': 'Toys', 'icon': Icons.toys},
       {'title': 'Beauty Products', 'icon': Icons.brush},
       {'title': 'Sports', 'icon': Icons.sports},
-      {'title': 'Music', 'icon': Icons.music_note},
       {'title': 'Health', 'icon': Icons.health_and_safety},
-      {'title': 'Automotive', 'icon': Icons.directions_car},
-      {'title': 'Pets', 'icon': Icons.pets},
       {'title': 'Home Appliances', 'icon': Icons.kitchen},
-      {'title': 'Travel', 'icon': Icons.airplanemode_active},
-      {'title': 'Jewelry', 'icon': Icons.accessibility},
-      {'title': 'Movies', 'icon': Icons.movie},
       {'title': 'Gaming', 'icon': Icons.videogame_asset},
-      {'title': 'Art', 'icon': Icons.brush},
-      {'title': 'Photography', 'icon': Icons.camera_alt},
       {'title': 'Food & Drink', 'icon': Icons.fastfood},
       {'title': 'Books & Magazines', 'icon': Icons.bookmark},
       {'title': 'Stationery', 'icon': Icons.create},
       {'title': 'Crafts', 'icon': Icons.palette},
-      {'title': 'Office Supplies', 'icon': Icons.business},
-      {'title': 'Construction', 'icon': Icons.home_repair_service},
       {'title': 'Outdoor & Adventure', 'icon': Icons.outdoor_grill},
       {'title': 'Watches', 'icon': Icons.watch},
-      {'title': 'Accessories', 'icon': Icons.headphones},
-      {'title': 'Gifts', 'icon': Icons.card_giftcard}, 
-
-
+      {'title': 'Gifts', 'icon': Icons.card_giftcard},
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
         backgroundColor: Colors.teal,
+        actions: [
+          // HomePage Button in the AppBar
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+              // Navigate to the HomePage
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -68,7 +68,6 @@ class CategoryPage extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Selected: ${category['title']}')),
                   );
-                  // Navigate to category-specific page if required
                 },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
