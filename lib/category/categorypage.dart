@@ -7,6 +7,7 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Define categories with titles and icons
     final List<Map<String, dynamic>> categories = [
+      nal List<Map<String, dynamic>> categories = [
       {'title': 'Electronics', 'icon': Icons.electrical_services},
       {'title': 'Clothing', 'icon': Icons.shopping_bag},
       {'title': 'Books', 'icon': Icons.book},
@@ -36,6 +37,10 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Outdoor & Adventure', 'icon': Icons.outdoor_grill},
       {'title': 'Watches', 'icon': Icons.watch},
       {'title': 'Accessories', 'icon': Icons.headphones},
+<<<<<<< HEAD:lib/categorypage.dart
+=======
+    
+>>>>>>> e9db4dfb3ac2eb1a26484da9b18d82a33878b9d9:lib/category/categorypage.dart
     ];
 
     return Scaffold(
@@ -47,10 +52,10 @@ class CategoryPage extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Number of columns
+            crossAxisCount: 3, // Set to 3 to have 3 columns per row
             crossAxisSpacing: 8.0,
             mainAxisSpacing: 8.0,
-            childAspectRatio: 1.0,
+            childAspectRatio: 1.0, // Keep the items square
           ),
           itemCount: categories.length,
           itemBuilder: (context, index) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
-import 'categorypage.dart';
+import 'category/categorypage.dart';
 
 // Forgot Password Page
 class ForgotPasswordPage extends StatelessWidget {
