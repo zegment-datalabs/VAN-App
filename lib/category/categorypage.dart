@@ -36,6 +36,8 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Outdoor & Adventure', 'icon': Icons.outdoor_grill},
       {'title': 'Watches', 'icon': Icons.watch},
       {'title': 'Accessories', 'icon': Icons.headphones},
+      {'title': 'Gifts', 'icon': Icons.card_giftcard}, 
+
 
     ];
 
