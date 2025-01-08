@@ -15,6 +15,18 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Furniture', 'icon': Icons.chair},
       {'title': 'Toys', 'icon': Icons.toys},
       {'title': 'Beauty Products', 'icon': Icons.brush},
+      // Wholesale-related categories
+      {'title': 'Bulk Electronics', 'icon': Icons.devices},
+      {'title': 'Wholesale Clothing', 'icon': Icons.local_mall},
+      {'title': 'Wholesale Books', 'icon': Icons.library_books},
+      {'title': 'Wholesale Shoes', 'icon': Icons.shopping_cart},
+      {'title': 'Wholesale Groceries', 'icon': Icons.storefront},
+      {'title': 'Wholesale Furniture', 'icon': Icons.weekend},
+      {'title': 'Wholesale Toys', 'icon': Icons.child_care},
+      {'title': 'Wholesale Beauty Products', 'icon': Icons.face_retouching_natural},
+      {'title': 'Wholesale Home Appliances', 'icon': Icons.kitchen},
+      {'title': 'Wholesale Office Supplies', 'icon': Icons.business_center},
+    
     ];
 
     return Scaffold(
@@ -26,10 +38,10 @@ class CategoryPage extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Number of columns
+            crossAxisCount: 3, // Set to 3 to have 3 columns per row
             crossAxisSpacing: 8.0,
             mainAxisSpacing: 8.0,
-            childAspectRatio: 1.0,
+            childAspectRatio: 1.0, // Keep the items square
           ),
           itemCount: categories.length,
           itemBuilder: (context, index) {
