@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
+import 'categorypage.dart';
 
 // Placeholder for CategoryPage (Replace with your actual page implementation)
 class CategoryPage extends StatelessWidget {
@@ -107,7 +108,11 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
+<<<<<<< HEAD
             MaterialPageRoute(builder: (context) => const CategoryPage()),
+=======
+            MaterialPageRoute(builder: (context) => const CategoryPage()), // Navigate to sign-up page as example
+>>>>>>> 060a795e6bff27ca06cb12a97aef4c14be5e39f5
           );
         }
       });
