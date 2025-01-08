@@ -7,7 +7,6 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Define categories with titles and icons
     final List<Map<String, dynamic>> categories = [
-      nal List<Map<String, dynamic>> categories = [
       {'title': 'Electronics', 'icon': Icons.electrical_services},
       {'title': 'Clothing', 'icon': Icons.shopping_bag},
       {'title': 'Books', 'icon': Icons.book},
@@ -37,7 +36,6 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Outdoor & Adventure', 'icon': Icons.outdoor_grill},
       {'title': 'Watches', 'icon': Icons.watch},
       {'title': 'Accessories', 'icon': Icons.headphones},
-    
     ];
 
     return Scaffold(
