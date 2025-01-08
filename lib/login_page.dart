@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 
+// Placeholder for CategoryPage (Replace with your actual page implementation)
+class CategoryPage extends StatelessWidget {
+  const CategoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Category Page')),
+      body: const Center(child: Text('Welcome to Category Page!')),
+    );
+  }
+}
+
 // Forgot Password Page
 class ForgotPasswordPage extends StatelessWidget {
   const ForgotPasswordPage({super.key});
@@ -84,9 +97,20 @@ class _LoginPageState extends State<LoginPage> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
+      // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Logging in as ${_emailPhoneController.text}')),
       );
+
+      // Simulate successful login process
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CategoryPage()),
+          );
+        }
+      });
     }
   }
 
@@ -124,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email or phone number';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}\$')
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+|^[0-9]{10}$')
                         .hasMatch(value)) {
                       return 'Please enter a valid email or phone number';
                     }
@@ -229,19 +253,8 @@ class _LoginPageState extends State<LoginPage> {
           borderRadius: BorderRadius.circular(12.0),
           borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.teal),
-        ),
       ),
       validator: validator,
     );
-  }
-
-  @override
-  void dispose() {
-    _emailPhoneController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }
