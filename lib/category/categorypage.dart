@@ -7,6 +7,7 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Define categories with titles and icons
     final List<Map<String, dynamic>> categories = [
+      nal List<Map<String, dynamic>> categories = [
       {'title': 'Electronics', 'icon': Icons.electrical_services},
       {'title': 'Clothing', 'icon': Icons.shopping_bag},
       {'title': 'Books', 'icon': Icons.book},
@@ -15,17 +16,27 @@ class CategoryPage extends StatelessWidget {
       {'title': 'Furniture', 'icon': Icons.chair},
       {'title': 'Toys', 'icon': Icons.toys},
       {'title': 'Beauty Products', 'icon': Icons.brush},
-      // Wholesale-related categories
-      {'title': 'Bulk Electronics', 'icon': Icons.devices},
-      {'title': 'Wholesale Clothing', 'icon': Icons.local_mall},
-      {'title': 'Wholesale Books', 'icon': Icons.library_books},
-      {'title': 'Wholesale Shoes', 'icon': Icons.shopping_cart},
-      {'title': 'Wholesale Groceries', 'icon': Icons.storefront},
-      {'title': 'Wholesale Furniture', 'icon': Icons.weekend},
-      {'title': 'Wholesale Toys', 'icon': Icons.child_care},
-      {'title': 'Wholesale Beauty Products', 'icon': Icons.face_retouching_natural},
-      {'title': 'Wholesale Home Appliances', 'icon': Icons.kitchen},
-      {'title': 'Wholesale Office Supplies', 'icon': Icons.business_center},
+      {'title': 'Sports', 'icon': Icons.sports},
+      {'title': 'Music', 'icon': Icons.music_note},
+      {'title': 'Health', 'icon': Icons.health_and_safety},
+      {'title': 'Automotive', 'icon': Icons.directions_car},
+      {'title': 'Pets', 'icon': Icons.pets},
+      {'title': 'Home Appliances', 'icon': Icons.kitchen},
+      {'title': 'Travel', 'icon': Icons.airplanemode_active},
+      {'title': 'Jewelry', 'icon': Icons.accessibility},
+      {'title': 'Movies', 'icon': Icons.movie},
+      {'title': 'Gaming', 'icon': Icons.videogame_asset},
+      {'title': 'Art', 'icon': Icons.brush},
+      {'title': 'Photography', 'icon': Icons.camera_alt},
+      {'title': 'Food & Drink', 'icon': Icons.fastfood},
+      {'title': 'Books & Magazines', 'icon': Icons.bookmark},
+      {'title': 'Stationery', 'icon': Icons.create},
+      {'title': 'Crafts', 'icon': Icons.palette},
+      {'title': 'Office Supplies', 'icon': Icons.business},
+      {'title': 'Construction', 'icon': Icons.home_repair_service},
+      {'title': 'Outdoor & Adventure', 'icon': Icons.outdoor_grill},
+      {'title': 'Watches', 'icon': Icons.watch},
+      {'title': 'Accessories', 'icon': Icons.headphones},
     
     ];
 
