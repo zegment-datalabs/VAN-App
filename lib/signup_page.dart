@@ -104,33 +104,32 @@ class _SignUpPageState extends State<SignUpPage> {
         final inputText = _emailOrPhoneController.text.trim();
         UserCredential userCredential;
 
+        // Check for valid email format first
         if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: inputText,
-            password: _passwordController.text.trim(),
-          );
-        } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
-          await FirebaseAuth.instance.verifyPhoneNumber(
-            phoneNumber: inputText,
-            verificationCompleted: (PhoneAuthCredential credential) async {
-              userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-            },
-            verificationFailed: (FirebaseAuthException e) {
-              throw e;
-            },
-            codeSent: (String verificationId, int? resendToken) async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('OTP sent to phone number!')),
-              );
-            },
-            codeAutoRetrievalTimeout: (String verificationId) {},
-          );
-          return;
+          try {
+            // Attempt to create the user using Firebase to check if the email is valid
+            userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: inputText,
+              password: _passwordController.text.trim(),
+            );
+          } on FirebaseAuthException catch (e) {
+            // Handle errors such as invalid email (this will catch invalid emails in Firebase)
+            String errorMessage = 'An error occurred. Please try again.';
+            if (e.code == 'invalid-email') {
+              errorMessage = 'Please enter a valid email address.';
+            } else if (e.code == 'email-already-in-use') {
+              errorMessage = 'This email is already in use.';
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(errorMessage)),
+            );
+            return; // Stop further execution
+          }
         } else {
-          throw FirebaseAuthException(
-            code: 'invalid-input',
-            message: 'Please enter a valid email address or phone number',
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter a valid email address')),
           );
+          return; // Stop further execution if the email format is invalid
         }
 
         final userId = userCredential.user!.uid;
