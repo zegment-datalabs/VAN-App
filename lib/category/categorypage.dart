@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:van_app_demo/homepage.dart';
+import 'package:van_app_demo/category/productspage.dart'; // Import the ProductsPage
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Define categories with titles and icons
     final List<Map<String, dynamic>> categories = [
       {'title': 'Electronics', 'icon': Icons.electrical_services},
       {'title': 'Clothing', 'icon': Icons.shopping_bag},
@@ -33,11 +33,9 @@ class CategoryPage extends StatelessWidget {
         title: const Text('Categories'),
         backgroundColor: Colors.teal,
         actions: [
-          // HomePage Button in the AppBar
           IconButton(
             icon: const Icon(Icons.home),
             onPressed: () {
-              // Navigate to the HomePage
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const HomePage()),
@@ -50,10 +48,10 @@ class CategoryPage extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // Set to 3 to have 3 columns per row
+            crossAxisCount: 3,
             crossAxisSpacing: 8.0,
             mainAxisSpacing: 8.0,
-            childAspectRatio: 1.0, // Keep the items square
+            childAspectRatio: 1.0,
           ),
           itemCount: categories.length,
           itemBuilder: (context, index) {
@@ -65,8 +63,13 @@ class CategoryPage extends StatelessWidget {
               ),
               child: InkWell(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Selected: ${category['title']}')),
+                  // Navigate to ProductsPage with the selected category
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProductsPage(categoryTitle: category['title']),
+                    ),
                   );
                 },
                 child: Column(
