@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';  // Add this import
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -102,70 +100,56 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_formKey.currentState!.validate()) {
       try {
         final inputText = _emailOrPhoneController.text.trim();
-        UserCredential userCredential;
 
-        // Check for valid email format first
-        if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          try {
-            // Attempt to create the user using Firebase to check if the email is valid
-            userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-              email: inputText,
-              password: _passwordController.text.trim(),
-            );
-          } on FirebaseAuthException catch (e) {
-            // Handle errors such as invalid email (this will catch invalid emails in Firebase)
-            String errorMessage = 'An error occurred. Please try again.';
-            if (e.code == 'invalid-email') {
-              errorMessage = 'Please enter a valid email address.';
-            } else if (e.code == 'email-already-in-use') {
-              errorMessage = 'This email is already in use.';
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
-            return; // Stop further execution
-          }
-        } else {
+        // Step 1: Validate email format
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter a valid email address')),
+            const SnackBar(content: Text('Please enter a valid email address.')),
           );
-          return; // Stop further execution if the email format is invalid
+          return;
         }
 
-        final userId = userCredential.user!.uid;
-        final profileImageUrl = await _uploadImage(userId);
-
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'name': _nameController.text.trim(),
-          'emailOrPhone': inputText,
-          'profileImageUrl': profileImageUrl,
-        });
-
-        // Save user data to SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        prefs.setString('emailPhone', inputText);
-        prefs.setString('profilePicPath', profileImageUrl ?? 'default-avatar-url');
-        prefs.setBool('isLoggedIn', true);
-
-        await userCredential.user!.sendEmailVerification();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign-Up Successful! Please verify your email.')),
+        // Step 2: Create user in Firebase Auth
+        final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: inputText,
+          password: _passwordController.text.trim(),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        final User? user = userCredential.user;
+
+        if (user != null) {
+          // Step 3: Send email verification
+          await user.sendEmailVerification();
+
+          // Step 4: Save additional user details to Firestore
+          final userId = user.uid;
+          final profileImageUrl = await _uploadImage(userId);
+
+          await FirebaseFirestore.instance.collection('users').doc(userId).set({
+            'name': _nameController.text.trim(),
+            'emailOrPhone': inputText,
+            'profileImageUrl': profileImageUrl,
+            'isVerified': false, // Track verification status
+          });
+
+          // Step 5: Inform user and navigate
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sign-Up Successful! Verify your email before logging in.')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       } on FirebaseAuthException catch (e) {
         String errorMessage;
 
         if (e.code == 'email-already-in-use') {
           errorMessage = 'This email is already in use.';
-        } else if (e.code == 'invalid-email') {
-          errorMessage = 'Invalid email address.';
         } else if (e.code == 'weak-password') {
           errorMessage = 'Password is too weak.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Invalid email format. Please enter a correct email address.';
         } else {
           errorMessage = 'An error occurred. Please try again.';
         }
@@ -177,7 +161,6 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  // Navigate to Login Page
   void _navigateToSignIn() {
     Navigator.push(
       context,

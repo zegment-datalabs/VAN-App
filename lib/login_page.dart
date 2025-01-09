@@ -17,61 +17,64 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        final inputText = _emailPhoneController.text.trim();
+  if (_formKey.currentState!.validate()) {
+    try {
+      final inputText = _emailPhoneController.text.trim();
 
-        if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: inputText,
-            password: _passwordController.text.trim(),
+      // Check if input is a valid email
+      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid email address.')),
+        );
+        return;
+      }
+
+      // Attempt to sign in with email and password
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: inputText,
+        password: _passwordController.text.trim(),
+      );
+
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        // Check if the email is verified
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email not verified. Verification email sent. Please verify and try again.'),
+            ),
           );
-        } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
-          await FirebaseAuth.instance.verifyPhoneNumber(
-            phoneNumber: inputText,
-            verificationCompleted: (PhoneAuthCredential credential) async {
-              await FirebaseAuth.instance.signInWithCredential(credential);
-            },
-            verificationFailed: (FirebaseAuthException e) {
-              throw e;
-            },
-            codeSent: (String verificationId, int? resendToken) async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('OTP sent to phone number!')),
-              );
-            },
-            codeAutoRetrievalTimeout: (String verificationId) {},
-          );
+
+          // Sign the user out after sending the verification email
+          await FirebaseAuth.instance.signOut();
           return;
-        } else {
-          throw FirebaseAuthException(
-            code: 'invalid-input',
-            message: 'Please enter a valid email address or phone number',
-          );
         }
 
-        // Navigate to Category Page
+        // Navigate to the next page (e.g., CategoryPage) if email is verified
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const CategoryPage()),
         );
-      } on FirebaseAuthException catch (e) {
-        String errorMessage;
-
-        if (e.code == 'user-not-found') {
-          errorMessage = 'No user found for that email or phone number.';
-        } else if (e.code == 'wrong-password') {
-          errorMessage = 'Incorrect password.';
-        } else {
-          errorMessage = 'An error occurred. Please try again.';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
       }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Incorrect password.';
+      } else {
+        errorMessage = 'An error occurred. Please try again.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
