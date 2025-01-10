@@ -22,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   void _login() async {
     setState(() {
       _emailError = null;
-      _passwordError = null;
+      _passwordError = null; // Reset password error
     });
 
     if (_formKey.currentState!.validate()) {
@@ -75,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
           });
         } else {
           setState(() {
-            _emailError = 'Invalid email.Verify your email.';
+            _emailError = 'Invalid email. Verify your email.';
           });
         }
       }
@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
-                    errorText: _passwordError,
+                    errorText: _passwordError, // Bind the password error message
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -148,6 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
+                
                 const SizedBox(height: 20.0),
 
                 // Login Button
