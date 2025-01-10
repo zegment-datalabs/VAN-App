@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'category/categorypage.dart';
-import 'signup_page.dart';  // Import the SignUpPage
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,65 +16,71 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  String? _emailError;
+  String? _passwordError;
+
   void _login() async {
-  if (_formKey.currentState!.validate()) {
-    try {
-      final inputText = _emailPhoneController.text.trim();
+    setState(() {
+      _emailError = null;
+      _passwordError = null; // Reset password error
+    });
 
-      // Check if input is a valid email
-      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid email address.')),
-        );
-        return;
-      }
+    if (_formKey.currentState!.validate()) {
+      try {
+        final inputText = _emailPhoneController.text.trim();
 
-      // Attempt to sign in with email and password
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: inputText,
-        password: _passwordController.text.trim(),
-      );
-
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        // Check if the email is verified
-        if (!user.emailVerified) {
-          await user.sendEmailVerification();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Email not verified. Verification email sent. Please verify and try again.'),
-            ),
-          );
-
-          // Sign the user out after sending the verification email
-          await FirebaseAuth.instance.signOut();
+        // Check if input is a valid email
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
+          setState(() {
+            _emailError = 'Please enter a valid email address.';
+          });
           return;
         }
 
-        // Navigate to the next page (e.g., CategoryPage) if email is verified
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        // Attempt to sign in with email and password
+        final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: inputText,
+          password: _passwordController.text.trim(),
         );
-      }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage;
 
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Incorrect password.';
-      } else {
-        errorMessage = 'An error occurred. Please try again.';
-      }
+        final User? user = userCredential.user;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+        if (user != null) {
+          // Check if the email is verified
+          if (!user.emailVerified) {
+            await user.sendEmailVerification();
+            setState(() {
+              _emailError = 'Email not verified. Verification email sent. Please verify and try again.';
+            });
+
+            // Sign the user out after sending the verification email
+            await FirebaseAuth.instance.signOut();
+            return;
+          }
+
+          // Navigate to the next page (e.g., CategoryPage) if email is verified
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CategoryPage()),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found') {
+          setState(() {
+            _emailError = 'No user found for that email.';
+          });
+        } else if (e.code == 'wrong-password') {
+          setState(() {
+            _passwordError = 'Incorrect password.';
+          });
+        } else {
+          setState(() {
+            _emailError = 'Invalid email. Verify your email.';
+          });
+        }
+      }
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
+                    errorText: _emailError,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -110,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20.0),
+                const SizedBox(height: 10.0),
 
                 // Password Input
                 TextFormField(
@@ -132,6 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
+                    errorText: _passwordError, // Bind the password error message
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -140,6 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
+                
                 const SizedBox(height: 20.0),
 
                 // Login Button
