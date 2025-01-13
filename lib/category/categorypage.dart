@@ -1,17 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';  // For jsonDecode
-import 'productspage.dart';
-=======
 import 'package:van_app_demo/homepage.dart';
 import 'package:van_app_demo/category/productspage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart'; // for loading local JSON
->>>>>>> 0bc3cc35d19e5d197c036ba14d01be128290df17
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -19,8 +13,6 @@ class CategoryPage extends StatefulWidget {
   @override
   _CategoryPageState createState() => _CategoryPageState();
 }
-<<<<<<< HEAD
-=======
 
 class _CategoryPageState extends State<CategoryPage> {
   late List<Map<String, dynamic>> categories;
@@ -63,87 +55,25 @@ class _CategoryPageState extends State<CategoryPage> {
         body: const Center(child: Text('Please sign in to view categories')),
       );
     }
->>>>>>> 0bc3cc35d19e5d197c036ba14d01be128290df17
 
-class _CategoryPageState extends State<CategoryPage> {
-  List<dynamic> categories = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    final String response = await rootBundle.loadString('assets/categories.json');
-    final data = jsonDecode(response);
-    setState(() {
-      categories = data['categories']; // Assuming categories are stored under "categories"
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
         backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            },
+          ),
+        ],
       ),
       body: categories.isEmpty
           ? const Center(child: CircularProgressIndicator())
-<<<<<<< HEAD
-          : GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                final categoryTitle = category['title'] ?? 'Unknown Category';
-                final categoryIcon = category['icon'] ?? '';
-                
-                return Card(
-                  elevation: 4.0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductsPage(
-                            categoryTitle: categoryTitle,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _getIconData(categoryIcon),
-                          size: 40.0,
-                          color: Colors.teal,
-                        ),
-                        const SizedBox(height: 8.0),
-                        Text(
-                          categoryTitle,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-=======
           : Padding(
               padding: const EdgeInsets.all(8.0),
               child: GridView.builder(
@@ -195,26 +125,17 @@ class _CategoryPageState extends State<CategoryPage> {
                   );
                 },
               ),
->>>>>>> 0bc3cc35d19e5d197c036ba14d01be128290df17
             ),
     );
   }
 
-<<<<<<< HEAD
-  IconData _getIconData(String iconName) {
-=======
   // Helper function to map icon name to IconData
   IconData getIconFromString(String iconName) {
->>>>>>> 0bc3cc35d19e5d197c036ba14d01be128290df17
     switch (iconName) {
       case 'Icons.electrical_services':
         return Icons.electrical_services;
       case 'Icons.shopping_bag':
         return Icons.shopping_bag;
-<<<<<<< HEAD
-      default:
-        return Icons.category; // Default icon
-=======
       case 'Icons.book':
         return Icons.book;
       case 'Icons.run_circle':
@@ -249,7 +170,6 @@ class _CategoryPageState extends State<CategoryPage> {
         return Icons.card_giftcard;
       default:
         return Icons.help;
->>>>>>> 0bc3cc35d19e5d197c036ba14d01be128290df17
     }
   }
 }
