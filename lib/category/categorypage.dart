@@ -1,11 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:van_app_demo/homepage.dart';
-import 'package:van_app_demo/category/productspage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart'; // for loading local JSON
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -15,14 +10,16 @@ class CategoryPage extends StatefulWidget {
 }
 
 class _CategoryPageState extends State<CategoryPage> {
-  late List<Map<String, dynamic>> categories;
   bool isUserSignedIn = false;
+
+  // Firestore Stream to listen for updates in the 'categories' collection
+  final Stream<QuerySnapshot> _categoriesStream =
+      FirebaseFirestore.instance.collection('categories').snapshots();
 
   @override
   void initState() {
     super.initState();
     _checkUserSignIn();
-    _loadCategories();
   }
 
   // Check if the user is signed in
@@ -33,15 +30,21 @@ class _CategoryPageState extends State<CategoryPage> {
     });
   }
 
-  // Load categories from the local JSON file
-  Future<void> _loadCategories() async {
-    // Replace with the path to your 'category.json' file
-    final String response = await rootBundle.loadString('assets/category.json');
-    final data = await json.decode(response);
-
-    setState(() {
-      categories = List<Map<String, dynamic>>.from(data);
-    });
+  // Helper function to convert icon data
+  IconData getIconData(dynamic iconField) {
+    if (iconField is int) {
+      return IconData(iconField, fontFamily: 'MaterialIcons');
+    } else if (iconField is String) {
+      // Add a map of string icon names to IconData
+      final iconMap = {
+        'book': Icons.book,
+        'shopping_bag': Icons.shopping_bag,
+        'help': Icons.help,
+        // Add more string mappings here
+      };
+      return iconMap[iconField] ?? Icons.help;
+    }
+    return Icons.help; // Fallback icon
   }
 
   @override
@@ -60,116 +63,76 @@ class _CategoryPageState extends State<CategoryPage> {
       appBar: AppBar(
         title: const Text('Categories'),
         backgroundColor: Colors.teal,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-              );
-            },
-          ),
-        ],
       ),
-      body: categories.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8.0,
-                  mainAxisSpacing: 8.0,
-                  childAspectRatio: 1.0,
-                ),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  return Card(
-                    elevation: 4.0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        // Navigate to ProductsPage with the selected category
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductsPage(categoryTitle: category['title']),
-                          ),
-                        );
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            getIconFromString(category['icon']),
-                            size: 40.0,
-                            color: Colors.teal,
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            category['title'],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-    );
-  }
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _categoriesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-  // Helper function to map icon name to IconData
-  IconData getIconFromString(String iconName) {
-    switch (iconName) {
-      case 'Icons.electrical_services':
-        return Icons.electrical_services;
-      case 'Icons.shopping_bag':
-        return Icons.shopping_bag;
-      case 'Icons.book':
-        return Icons.book;
-      case 'Icons.run_circle':
-        return Icons.run_circle;
-      case 'Icons.local_grocery_store':
-        return Icons.local_grocery_store;
-      case 'Icons.toys':
-        return Icons.toys;
-      case 'Icons.brush':
-        return Icons.brush;
-      case 'Icons.sports':
-        return Icons.sports;
-      case 'Icons.health_and_safety':
-        return Icons.health_and_safety;
-      case 'Icons.kitchen':
-        return Icons.kitchen;
-      case 'Icons.videogame_asset':
-        return Icons.videogame_asset;
-      case 'Icons.fastfood':
-        return Icons.fastfood;
-      case 'Icons.bookmark':
-        return Icons.bookmark;
-      case 'Icons.create':
-        return Icons.create;
-      case 'Icons.palette':
-        return Icons.palette;
-      case 'Icons.outdoor_grill':
-        return Icons.outdoor_grill;
-      case 'Icons.watch':
-        return Icons.watch;
-      case 'Icons.card_giftcard':
-        return Icons.card_giftcard;
-      default:
-        return Icons.help;
-    }
+          if (snapshot.hasError) {
+            return const Center(child: Text('Something went wrong'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No categories available'));
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final document = snapshot.data!.docs[index];
+                Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+                String categoryName = data['title'] ?? 'No Name';
+                dynamic iconField = data['icon']; // This can be int or String
+
+                // Convert iconField to IconData
+                IconData categoryIcon = getIconData(iconField);
+
+                return Card(
+                  elevation: 4.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      print('Category tapped: $categoryName');
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          categoryIcon,
+                          size: 40.0,
+                          color: Colors.teal,
+                        ),
+                        const SizedBox(height: 8.0),
+                        Text(
+                          categoryName,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 }
