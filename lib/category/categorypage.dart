@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/homepage.dart';
 import 'package:van_app_demo/category/productspage.dart';
+import 'package:van_app_demo/cart_page.dart';  // Import the CartPage
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({super.key});
@@ -21,6 +22,18 @@ class CategoryPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            },
+          ),
+          
+          // Cart Button in the AppBar
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              // Navigate to the CartPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),  // Ensure CartPage is imported correctly
               );
             },
           ),

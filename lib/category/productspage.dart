@@ -1,6 +1,6 @@
-import 'dart:convert';
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -12,46 +12,123 @@ class ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<ProductsPage> {
-  // Controller map for each product
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
+  bool isLoading = true;
+  bool hasMoreProducts = true;
+  DocumentSnapshot? lastDocument;
+  int currentPage = 1; // Track current page
+  int totalPages = 1; // Track total pages
 
-  Future<void> _loadProducts(BuildContext context) async {
-    // Only load products if they are not already loaded
-    if (products.isEmpty) {
-      final String jsonString = await DefaultAssetBundle.of(context)
-          .loadString('assets/products.json');
-      final List<dynamic> productsJson = json.decode(jsonString);
-      products = productsJson
-          .map((product) => product as Map<String, dynamic>)
-          .toList()
-          .where((product) => product['category'] == widget.categoryTitle)
-          .toList();
+  Future<void> _loadProducts() async {
+    setState(() {
+      isLoading = true;
+    });
 
-      // Initialize controllers for each product
-      for (var product in products) {
-        if (!controllers.containsKey(product['name'])) {
-          controllers[product['name']] = TextEditingController(
-              text: product['quantity']?.toString() ?? '0');
+    final productCollection = FirebaseFirestore.instance.collection('product');
+
+    try {
+      // Fetching products for the current page
+      Query query = productCollection
+          .where('category', isEqualTo: widget.categoryTitle)
+          .limit(10);
+
+      if (currentPage > 1 && lastDocument != null) {
+        query = query.startAfterDocument(lastDocument!);
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          lastDocument = snapshot.docs.last;
+          hasMoreProducts = snapshot.docs.length == 10;
+
+          // If it's the first page, replace the product list; otherwise, append
+          if (currentPage == 1) {
+            products = snapshot.docs
+                .map((doc) => doc.data() as Map<String, dynamic>)
+                .toList();
+          } else {
+            products.addAll(snapshot.docs
+                .map((doc) => doc.data() as Map<String, dynamic>)
+                .toList());
+          }
+        });
+
+        // Fetch total product count (not from snapshot)
+        await _fetchTotalProductsCount();
+        
+        // Initialize controllers for new products
+        for (var product in products) {
+          final productName = product['title'] ?? 'Unknown';
+          if (!controllers.containsKey(productName)) {
+            controllers[productName] = TextEditingController(text: '0');
+          }
         }
       }
+    } catch (e) {
+      print('Error loading products: $e');
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> _fetchTotalProductsCount() async {
+    try {
+      final productCollection = FirebaseFirestore.instance.collection('product');
+      final snapshot = await productCollection
+          .where('category', isEqualTo: widget.categoryTitle)
+          .get();
+
+      final totalProducts = snapshot.size; // Get the total count from the snapshot
+      totalPages = (totalProducts / 10).ceil(); // Calculate total pages
+    } catch (e) {
+      print('Error fetching total product count: $e');
     }
   }
 
-  // Debounce timer for manual quantity input
-  Timer? _debounce;
+  void _addToGlobalCart() {
+    for (var product in products) {
+      final productName = product['title'] ?? 'Unknown';
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
-  void _onQuantityChanged(String productName, String value) {
-    // Cancel any previous debounce timer
-    if (_debounce?.isActive ?? false) _debounce?.cancel();
+      if (quantity > 0) {
+        final existingIndex = Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
 
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+        if (existingIndex >= 0) {
+          Cart.selectedProducts[existingIndex]['quantity'] += quantity;
+        } else {
+          Cart.selectedProducts.add({
+            ...product,
+            'quantity': quantity,
+          });
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Products added to cart!')),
+
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  void _goToPage(int page) {
+    if (page > 0 && page <= totalPages && page != currentPage) {
       setState(() {
-        final newQuantity = int.tryParse(value) ?? 0;
-        controllers[productName]?.text =
-            newQuantity < 0 ? '0' : newQuantity.toString();
+        currentPage = page;
+        products.clear();
       });
-    });
+      _loadProducts();
+    }
   }
 
   @override
@@ -62,26 +139,20 @@ class _ProductsPageState extends State<ProductsPage> {
         backgroundColor: Colors.teal,
         actions: [
           IconButton(
-            icon: const Icon(Icons.home),
+            icon: const Icon(Icons.shopping_cart),
             onPressed: () {
-              Navigator.pop(context); // Go back to home page
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              );
             },
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _loadProducts(context),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text('Error loading products.'));
-          } else if (products.isEmpty) {
-            return const Center(child: Text('No products found.'));
-          } else {
-            return Column(
+      body: isLoading && products.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                // Product List
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -89,10 +160,8 @@ class _ProductsPageState extends State<ProductsPage> {
                       itemCount: products.length,
                       itemBuilder: (context, index) {
                         final product = products[index];
-                        final productName = product['name'];
-                        final quantity = int.tryParse(
-                                controllers[productName]?.text ?? '0') ??
-                            0;
+                        final productName = product['title'] ?? 'Unknown';
+                        final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
                         return Card(
                           elevation: 4.0,
@@ -101,7 +170,6 @@ class _ProductsPageState extends State<ProductsPage> {
                             padding: const EdgeInsets.all(8.0),
                             child: Row(
                               children: [
-                                // Product Name
                                 Expanded(
                                   flex: 2,
                                   child: Text(
@@ -112,13 +180,11 @@ class _ProductsPageState extends State<ProductsPage> {
                                     ),
                                   ),
                                 ),
-                                // Quantity Controller (- Button, Quantity Display, + Button)
                                 Expanded(
                                   flex: 3,
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      // Less (-) Button
                                       IconButton(
                                         icon: const Icon(Icons.remove_circle),
                                         color: Colors.red,
@@ -131,7 +197,6 @@ class _ProductsPageState extends State<ProductsPage> {
                                           });
                                         },
                                       ),
-                                      // Quantity Display
                                       Text(
                                         quantity.toString(),
                                         style: const TextStyle(
@@ -139,7 +204,6 @@ class _ProductsPageState extends State<ProductsPage> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      // Add (+) Button
                                       IconButton(
                                         icon: const Icon(Icons.add_circle),
                                         color: Colors.green,
@@ -153,7 +217,6 @@ class _ProductsPageState extends State<ProductsPage> {
                                     ],
                                   ),
                                 ),
-                                // Manual Quantity Input
                                 Expanded(
                                   flex: 2,
                                   child: TextField(
@@ -165,7 +228,11 @@ class _ProductsPageState extends State<ProductsPage> {
                                       labelText: 'Qty',
                                     ),
                                     onChanged: (value) {
-                                      _onQuantityChanged(productName, value);
+                                      setState(() {
+                                        final newQuantity = int.tryParse(value) ?? 0;
+                                        controllers[productName]?.text =
+                                            newQuantity < 0 ? '0' : newQuantity.toString();
+                                      });
                                     },
                                   ),
                                 ),
@@ -177,48 +244,63 @@ class _ProductsPageState extends State<ProductsPage> {
                     ),
                   ),
                 ),
-                // Footer
-                Container(
-                  padding: const EdgeInsets.all(10.0),
-                  color: Colors.teal[100], // Set background color
+                // Pagination above the footer
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
                   child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceAround, // Space buttons evenly
-                    children: [
-                      // Buy Now Button
-                      ElevatedButton(
-                        onPressed: () {
-                          // Add your action for 'Buy Now' here
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Buy Now clicked')),
-                          );
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      totalPages,
+                      (index) => GestureDetector(
+                        onTap: () {
+                          _goToPage(index + 1);
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Button color
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: currentPage == (index + 1)
+                              ? Colors.teal
+                              : Colors.grey,
+                          child: Text(
+                            (index + 1).toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                        child: const Text('Buy Now'),
                       ),
-                      // Add to Cart Button
-                      ElevatedButton(
-                        onPressed: () {
-                          // Add your action for 'Add to Cart' here
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Added to Cart')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue, // Button color
+                    ).toList(),
+                  ),
+                ),
+                // Footer with buttons
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    padding: const EdgeInsets.all(10.0),
+                    color: Colors.teal[100],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Buy Now clicked')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          child: const Text('Buy Now'),
                         ),
-                        child: const Text('Add to Cart'),
-                      ),
-                    ],
+                        ElevatedButton(
+                          onPressed: _addToGlobalCart,
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                          child: const Text('Add to Cart'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
-            );
-          }
-        },
-      ),
+            ),
     );
   }
 }
