@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class Cart {
+<<<<<<< HEAD
+=======
+  // Store the selected products in the cart
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
   static final List<Map<String, dynamic>> selectedProducts = [];
 }
 
@@ -20,7 +24,11 @@ class CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
 
+=======
+    // Update the search query as user types
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
     searchController.addListener(() {
       setState(() {
         searchQuery = searchController.text;
@@ -35,6 +43,7 @@ class CartPageState extends State<CartPage> {
     super.dispose();
   }
 
+<<<<<<< HEAD
   // Calculate total price and total quantity
   double get totalPrice {
     double total = 0.0;
@@ -52,10 +61,36 @@ class CartPageState extends State<CartPage> {
       total += product['quantity'] ?? 0 as int ;
     }
     return total;
+=======
+  // Calculate the total price of all products in the cart
+ double calculateTotalAmount() {
+  double total = Cart.selectedProducts.fold<double>(
+    0.0,
+    (total, product) {
+      final quantity = product['quantity'] is int ? product['quantity'] : 0;
+      final sellingPrice = double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
+      return total + (quantity * sellingPrice);
+    },
+  );
+  return total;
+}
+
+
+  // Calculate the total quantity of all products in the cart
+  int calculateTotalQuantity() {
+    return Cart.selectedProducts.fold<int>(
+      0,
+      (total, product) => total + (product['quantity'] ?? 0) as int,
+    );
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
   }
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
+=======
+    // Filter products based on search query
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
     final filteredProducts = Cart.selectedProducts.where((product) {
       final productTitle = product['title']?.toLowerCase() ?? '';
       return productTitle.contains(searchQuery.toLowerCase());
@@ -85,6 +120,10 @@ class CartPageState extends State<CartPage> {
       ),
       body: Column(
         children: [
+<<<<<<< HEAD
+=======
+          // Search bar visibility toggle
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
           if (isSearchVisible)
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -125,7 +164,10 @@ class CartPageState extends State<CartPage> {
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
+<<<<<<< HEAD
                       final sellingPrice = product['selling_price']?.toString() ?? '0.00'; // Fetch selling price
+=======
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 
                       return Column(
                         children: [
@@ -153,12 +195,17 @@ class CartPageState extends State<CartPage> {
                                     ),
                                   ),
                                   Text(
+<<<<<<< HEAD
                                     'Quantity: ${product['quantity']}',
+=======
+                                    'Quantity: ${product['quantity'] ?? 0}',
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                     style: TextStyle(
                                       fontSize: 14.0,
                                       color: Colors.grey[600],
                                     ),
                                   ),
+<<<<<<< HEAD
                                   // Displaying the selling price under quantity
                                   Text(
                                     'Selling Price: \$ $sellingPrice',
@@ -167,11 +214,28 @@ class CartPageState extends State<CartPage> {
                                       color: Colors.green[600],
                                     ),
                                   ),
+=======
+                                  
+                                Text(
+                                  '₹${(double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 14.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+
+
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                 ],
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+<<<<<<< HEAD
+=======
+                                  // Decrement quantity or remove item
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.remove,
                                         color: Colors.red),
@@ -185,6 +249,10 @@ class CartPageState extends State<CartPage> {
                                       });
                                     },
                                   ),
+<<<<<<< HEAD
+=======
+                                  // Increment quantity
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.add,
                                         color: Colors.green),
@@ -194,6 +262,10 @@ class CartPageState extends State<CartPage> {
                                       });
                                     },
                                   ),
+<<<<<<< HEAD
+=======
+                                  // Remove item from cart
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.delete,
                                         color: Colors.red),
@@ -227,12 +299,19 @@ class CartPageState extends State<CartPage> {
                     },
                   ),
           ),
+<<<<<<< HEAD
           // Footer Section with Total Price, Total Quantity, and Place Order button
           Padding(
+=======
+          // Footer with Total and Place Order Button
+        Container(
+            color: Colors.white,
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
             padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+<<<<<<< HEAD
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -257,12 +336,32 @@ class CartPageState extends State<CartPage> {
                     // Place Order logic
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Order placed successfully!')),
+=======
+                Text(
+                  'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 5, 7, 7),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order Placed!')),
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
+<<<<<<< HEAD
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
+=======
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                   ),
                   child: const Text(
                     'Place Order',
@@ -276,4 +375,8 @@ class CartPageState extends State<CartPage> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de

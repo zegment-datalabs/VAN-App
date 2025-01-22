@@ -12,6 +12,7 @@ class OrderPage extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
 // import 'package:flutter/material.dart';
 
@@ -163,3 +164,6 @@ class OrderPage extends StatelessWidget {
 //     );
 //   }
 // }
+=======
+}
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de

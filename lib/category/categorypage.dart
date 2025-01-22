@@ -3,9 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/homepage.dart'; // Import HomePage
 import 'package:van_app_demo/category/productspage.dart';
 import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
+<<<<<<< HEAD
 import 'allproducts.dart';
 import 'order_page.dart'; // Add this import at the top if OrderPage is in another file
 
+=======
+import 'package:van_app_demo/category/allproducts.dart';
+
+import 'order_page.dart'; // Add this import at the top if OrderPage is in another file
+
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
 
@@ -148,7 +155,11 @@ class _CategoryPageState extends State<CategoryPage> {
                 // Navigate to CategoryPage when "Categories" is tapped
                 Navigator.push(
                   context,
+<<<<<<< HEAD
                   MaterialPageRoute(builder: (context) => const AllProducts()),
+=======
+                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                 );
               },
             ),

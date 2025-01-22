@@ -4,6 +4,10 @@ import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart'; // Import the HomePage
 import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
 import 'package:van_app_demo/category/order_page.dart';
+<<<<<<< HEAD
+=======
+import 'package:van_app_demo/category/allproducts.dart';
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -108,6 +112,7 @@ class _ProductsPageState extends State<ProductsPage> {
     });
   }
 
+<<<<<<< HEAD
   Future<void> _addToGlobalCart() async {
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
@@ -115,16 +120,34 @@ class _ProductsPageState extends State<ProductsPage> {
 
       if (quantity > 0) {
         // Check if the product already exists in the global cart
+=======
+   Future<void> _addToGlobalCart() async {
+    for (var product in filteredProducts) {
+      final productName = product['title'] ?? 'Unknown';
+      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+      if (quantity > 0) {
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
         final existingIndex =
             Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
 
         if (existingIndex >= 0) {
+<<<<<<< HEAD
           // Replace the quantity with the current value from the Qty box
           Cart.selectedProducts[existingIndex]['quantity'] = quantity;
         } else {
           // Add a new product to the cart
           Cart.selectedProducts.add({
             ...product,
+=======
+          Cart.selectedProducts[existingIndex]['quantity'] = quantity;
+        } else {
+          Cart.selectedProducts.add({
+            'title': productName,
+            'category': product['category'] ?? 'Unknown',
+            'sellingPrice': sellingPrice,
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
             'quantity': quantity,
           });
         }
@@ -238,6 +261,20 @@ class _ProductsPageState extends State<ProductsPage> {
                 );
               },
             ),
+<<<<<<< HEAD
+=======
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('All products'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
+                );
+              },
+            ),
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
             // Add Order menu item
             ListTile(
               leading: const Icon(Icons.assignment),
@@ -286,6 +323,7 @@ class _ProductsPageState extends State<ProductsPage> {
                     child: ListView.builder(
                       controller: _scrollController, // Assign ScrollController
                       itemCount: filteredProducts.length,
+<<<<<<< HEAD
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
                         final productName = product['title'] ?? 'Unknown';
@@ -382,6 +420,101 @@ class _ProductsPageState extends State<ProductsPage> {
                           ],
                         );
                       },
+=======
+                     itemBuilder: (context, index) {
+  final product = filteredProducts[index];
+  final productName = product['title'] ?? 'Unknown';
+  final sellingPrice = product['selling_price']?.toString() ?? '0.00';
+  final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+  return Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced vertical space between products
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    productName,
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '\$ $sellingPrice',
+                    style: const TextStyle(
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        final currentQuantity =
+                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        if (currentQuantity > 0) {
+                          controllers[productName]?.text = (currentQuantity - 1).toString();
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.green),
+                    onPressed: () {
+                      setState(() {
+                        final currentQuantity =
+                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        controllers[productName]?.text = (currentQuantity + 1).toString();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                height: 30.0, // Adjust the height as needed
+                child: TextField(
+                  controller: controllers[productName],
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center, // Horizontally center the text
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Qty',
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.0), // Vertically centering the text
+                  ),
+                  style: const TextStyle(fontSize: 14.0),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const Divider(  // Divider between the products
+        thickness: 1.0,  // Line thickness
+        color: Colors.grey,  // Line color
+      ),
+    ],
+  );
+}
+
+>>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                     ),
                   ),
                 ),

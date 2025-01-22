@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
+import 'category/allproducts.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -1401,6 +1402,26 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 18, color: Colors.white),
               ),
             ),
+            ElevatedButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AllProductsPage()),
+    );
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.orangeAccent,
+    minimumSize: const Size(200, 50),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+  ),
+  child: const Text(
+    'View All Products',
+    style: TextStyle(fontSize: 18, color: Colors.white),
+  ),
+),
+
           ],
         ),
       ),
