@@ -1,103 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-<<<<<<< HEAD
-import 'package:firebase_auth/firebase_auth.dart';
-=======
-import 'package:van_app_demo/homepage.dart';
+import 'package:van_app_demo/homepage.dart'; // Import HomePage
 import 'package:van_app_demo/category/productspage.dart';
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
+import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
+import 'package:van_app_demo/category/allproducts.dart';
 
-class CategoryPage extends StatelessWidget {
+import 'order_page.dart'; // Add this import at the top if OrderPage is in another file
+
+class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
 
   @override
-<<<<<<< HEAD
   _CategoryPageState createState() => _CategoryPageState();
 }
 
 class _CategoryPageState extends State<CategoryPage> {
-  bool isUserSignedIn = false;
-
-  // Firestore Stream to listen for updates in the 'categories' collection
-  final Stream<QuerySnapshot> _categoriesStream =
-      FirebaseFirestore.instance.collection('categories').snapshots();
+  final TextEditingController searchController = TextEditingController();
+  final FocusNode searchFocusNode = FocusNode();
+  String searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _checkUserSignIn();
-  }
 
-  // Check if the user is signed in
-  void _checkUserSignIn() {
-    final user = FirebaseAuth.instance.currentUser;
-    setState(() {
-      isUserSignedIn = user != null;
+    // Attach listener to update search query
+    searchController.addListener(() {
+      setState(() {
+        searchQuery = searchController.text;
+      });
     });
   }
 
-  // Helper function to convert icon data
-  IconData getIconData(dynamic iconField) {
-    if (iconField is int) {
-      return IconData(iconField, fontFamily: 'MaterialIcons');
-    } else if (iconField is String) {
-      // Add a map of string icon names to IconData
-      final iconMap = {
-        'book': Icons.book,
-        'shopping_bag': Icons.shopping_bag,
-        'help': Icons.help,
-        // Add more string mappings here
-      };
-      return iconMap[iconField] ?? Icons.help;
-    }
-    return Icons.help; // Fallback icon
+  @override
+  void dispose() {
+    searchController.dispose();
+    searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
-=======
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
         backgroundColor: Colors.teal,
-<<<<<<< HEAD
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _categoriesStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return const Center(child: Text('Something went wrong'));
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No categories available'));
-          }
-
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: snapshot.data!.docs.length,
-              itemBuilder: (context, index) {
-                final document = snapshot.data!.docs[index];
-                Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
-                String categoryName = data['title'] ?? 'No Name';
-                dynamic iconField = data['icon']; // This can be int or String
-
-                // Convert iconField to IconData
-                IconData categoryIcon = getIconData(iconField);
-
-=======
         actions: [
           // HomePage Button in the AppBar
           IconButton(
@@ -110,95 +56,243 @@ class _CategoryPageState extends State<CategoryPage> {
               );
             },
           ),
+
+          // Cart Button in the AppBar
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              // Navigate to the CartPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const CartPage()), // Ensure CartPage is imported correctly
+              );
+            },
+          ),
+          // Drawer Toggle Button beside Cart Button
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  // Open Drawer on the right side
+                  Scaffold.of(context).openEndDrawer();
+                },
+              );
+            },
+          ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('category').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                'No categories available.',
-                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
+      // Right-side Drawer (End Drawer)
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            // Drawer header with user info
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.teal,
               ),
-            );
-          }
-
-          final categories = snapshot.data!.docs;
-
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index].data() as Map<String, dynamic>;
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
-                return Card(
-                  elevation: 4.0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
                   ),
-                  child: InkWell(
-                    onTap: () {
-<<<<<<< HEAD
-                      print('Category tapped: $categoryName');
-=======
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductsPage(
-                            categoryTitle: category['title'] ?? 'No Title',
-                          ),
-                        ),
-                      );
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-<<<<<<< HEAD
-                        Icon(
-                          categoryIcon,
-=======
-                        const Icon(
-                          Icons.category, // Replace with a dynamic icon if stored in Firestore
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
-                          size: 40.0,
-                          color: Colors.teal,
-                        ),
-                        const SizedBox(height: 8.0),
-                        Text(
-<<<<<<< HEAD
-                          categoryName,
-=======
-                          category['title'] ?? 'No Title',
->>>>>>> 143520d3667accc8f80f64fff1a7795081692523
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                  SizedBox(height: 10.0),
+                  Text(
+                    'User Name',
+                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+                  ),
+                ],
+              ),
+            ),
+            // Drawer menu items
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Cart'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Categories'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CategoryPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('All products'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
+                );
+              },
+            ),
+            // Add Order menu item
+            ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text('Orders'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderPage(),
                   ),
                 );
               },
             ),
-          );
-        },
+            // Add Logout menu item
+            ListTile(
+              leading: const Icon(Icons.exit_to_app),
+              title: const Text('Logout'),
+              onTap: () {
+                // Implement logout functionality if needed
+              },
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: searchController,
+              focusNode: searchFocusNode,
+              decoration: InputDecoration(
+                hintText: 'Search categories...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                suffixIcon: searchFocusNode.hasFocus
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          searchController.clear();
+                          searchFocusNode.unfocus();
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          // Category Stream Builder
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance.collection('category').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No categories available.',
+                      style: TextStyle(
+                          fontSize: 18.0, fontWeight: FontWeight.w500),
+                    ),
+                  );
+                }
+
+                final categories = snapshot.data!.docs;
+
+                // Filter categories based on search query
+                final filteredCategories = categories.where((category) {
+                  final categoryTitle = category['title']?.toLowerCase() ?? '';
+                  return categoryTitle.contains(searchQuery.toLowerCase());
+                }).toList();
+
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8.0,
+                      mainAxisSpacing: 8.0,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = filteredCategories[index].data()
+                          as Map<String, dynamic>;
+                      return Card(
+                        elevation: 4.0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductsPage(
+                                  categoryTitle:
+                                      category['title'] ?? 'No Title',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons
+                                    .category, // Replace with a dynamic icon if stored in Firestore
+                                size: 40.0,
+                                color: Colors.teal,
+                              ),
+                              const SizedBox(height: 8.0),
+                              Text(
+                                category['title'] ?? 'No Title',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

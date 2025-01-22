@@ -1,6 +1,10 @@
-import 'dart:convert';
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:van_app_demo/cart_page.dart';
+import 'package:van_app_demo/homepage.dart'; // Import the HomePage
+import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
+import 'package:van_app_demo/category/order_page.dart';
+import 'package:van_app_demo/category/allproducts.dart';
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -12,213 +16,412 @@ class ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<ProductsPage> {
-  // Controller map for each product
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
+  List<Map<String, dynamic>> filteredProducts = [];
+  bool isLoading = true;
 
-  Future<void> _loadProducts(BuildContext context) async {
-    // Only load products if they are not already loaded
-    if (products.isEmpty) {
-      final String jsonString = await DefaultAssetBundle.of(context)
-          .loadString('assets/products.json');
-      final List<dynamic> productsJson = json.decode(jsonString);
-      products = productsJson
-          .map((product) => product as Map<String, dynamic>)
-          .toList()
-          .where((product) => product['category'] == widget.categoryTitle)
-          .toList();
+  // Search functionality
+  TextEditingController searchController = TextEditingController();
+  FocusNode searchFocusNode = FocusNode();
 
-      // Initialize controllers for each product
-      for (var product in products) {
-        if (!controllers.containsKey(product['name'])) {
-          controllers[product['name']] = TextEditingController(
-              text: product['quantity']?.toString() ?? '0');
+  // ScrollController for smooth scrolling
+  final ScrollController _scrollController = ScrollController();
+
+  Future<void> _loadProducts() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final productCollection = FirebaseFirestore.instance.collection('product');
+
+    try {
+      final snapshot = await productCollection
+          .where('category', isEqualTo: widget.categoryTitle)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          products = snapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+          filteredProducts = products; // Initially, all products are shown
+        });
+
+        // Sort products by product_id
+        products.sort((a, b) {
+          final idA = a['product_id'] ?? '';
+          final idB = b['product_id'] ?? '';
+          return idA.compareTo(idB); // Sorting lexicographically
+        });
+
+        // Initialize controllers for products
+        for (var product in products) {
+          final productName = product['title'] ?? 'Unknown';
+          if (!controllers.containsKey(productName)) {
+            controllers[productName] = TextEditingController(text: '0');
+          }
         }
       }
+    } catch (e) {
+      print('Error loading products: $e');
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  // Function to handle the search query
+  void _filterProducts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredProducts = products;
+      });
+    } else {
+      setState(() {
+        filteredProducts = products
+            .where((product) {
+              final productName = product['title']?.toLowerCase() ?? '';
+              return productName.contains(query.toLowerCase());
+            })
+            .toList();
+      });
     }
   }
 
-  // Debounce timer for manual quantity input
-  Timer? _debounce;
+  // Function to programmatically scroll
+  void _scrollToPosition(double offset,
+      {Duration? duration, Curve curve = Curves.easeInOut}) {
+    _scrollController.animateTo(
+      offset,
+      duration: duration ?? const Duration(milliseconds: 200), // Adjust duration for speed control
+      curve: curve,
+    );
+  }
 
-  void _onQuantityChanged(String productName, String value) {
-    // Cancel any previous debounce timer
-    if (_debounce?.isActive ?? false) _debounce?.cancel();
-
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      setState(() {
-        final newQuantity = int.tryParse(value) ?? 0;
-        controllers[productName]?.text =
-            newQuantity < 0 ? '0' : newQuantity.toString();
+  // Function to reset all quantities
+  void _resetQuantities() {
+    setState(() {
+      controllers.forEach((key, controller) {
+        controller.text = '0';
       });
     });
+  }
+
+   Future<void> _addToGlobalCart() async {
+    for (var product in filteredProducts) {
+      final productName = product['title'] ?? 'Unknown';
+      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+      if (quantity > 0) {
+        final existingIndex =
+            Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
+
+        if (existingIndex >= 0) {
+          Cart.selectedProducts[existingIndex]['quantity'] = quantity;
+        } else {
+          Cart.selectedProducts.add({
+            'title': productName,
+            'category': product['category'] ?? 'Unknown',
+            'sellingPrice': sellingPrice,
+            'quantity': quantity,
+          });
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Products added to cart!'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    searchFocusNode.dispose();
+    _scrollController.dispose(); // Dispose the scroll controller
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar with Cart Icon and Hamburger Menu (on the right side)
       appBar: AppBar(
         title: Text(widget.categoryTitle),
         backgroundColor: Colors.teal,
         actions: [
+          // Cart Button
           IconButton(
-            icon: const Icon(Icons.home),
+            icon: const Icon(Icons.shopping_cart),
             onPressed: () {
-              Navigator.pop(context); // Go back to home page
+              // Reset all quantities before navigating to the cart page
+              _resetQuantities();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              );
+            },
+          ),
+
+          // Hamburger Menu (on the right side)
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  // Open Drawer on the right side
+                  Scaffold.of(context).openEndDrawer();
+                },
+              );
             },
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _loadProducts(context),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text('Error loading products.'));
-          } else if (products.isEmpty) {
-            return const Center(child: Text('No products found.'));
-          } else {
-            return Column(
+
+      // Drawer on the right side (simulated right drawer)
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+           const DrawerHeader(
+              decoration:  BoxDecoration(
+                color: Colors.teal,
+              ),
+              child:  Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                // Navigate to HomePage when "Home" is tapped
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Cart'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Categories'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CategoryPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('All products'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
+                );
+              },
+            ),
+            // Add Order menu item
+            ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text('Orders'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                // Handle Logout action
+              },
+            ),
+          ],
+        ),
+      ),
+
+      // Body content for the ProductsPage
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                // Product List
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: searchController,
+                    focusNode: searchFocusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Search Products',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: _filterProducts, // Filter products as the user types
+                  ),
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        final productName = product['name'];
-                        final quantity = int.tryParse(
-                                controllers[productName]?.text ?? '0') ??
-                            0;
+                      controller: _scrollController, // Assign ScrollController
+                      itemCount: filteredProducts.length,
+                     itemBuilder: (context, index) {
+  final product = filteredProducts[index];
+  final productName = product['title'] ?? 'Unknown';
+  final sellingPrice = product['selling_price']?.toString() ?? '0.00';
+  final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
-                        return Card(
-                          elevation: 4.0,
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                // Product Name
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    productName,
-                                    style: const TextStyle(
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                // Quantity Controller (- Button, Quantity Display, + Button)
-                                Expanded(
-                                  flex: 3,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // Less (-) Button
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle),
-                                        color: Colors.red,
-                                        onPressed: () {
-                                          setState(() {
-                                            if (quantity > 0) {
-                                              controllers[productName]?.text =
-                                                  (quantity - 1).toString();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      // Quantity Display
-                                      Text(
-                                        quantity.toString(),
-                                        style: const TextStyle(
-                                          fontSize: 16.0,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      // Add (+) Button
-                                      IconButton(
-                                        icon: const Icon(Icons.add_circle),
-                                        color: Colors.green,
-                                        onPressed: () {
-                                          setState(() {
-                                            controllers[productName]?.text =
-                                                (quantity + 1).toString();
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Manual Quantity Input
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    controller: controllers[productName],
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      labelText: 'Qty',
-                                    ),
-                                    onChanged: (value) {
-                                      _onQuantityChanged(productName, value);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+  return Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced vertical space between products
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    productName,
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '\$ $sellingPrice',
+                    style: const TextStyle(
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        final currentQuantity =
+                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        if (currentQuantity > 0) {
+                          controllers[productName]?.text = (currentQuantity - 1).toString();
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.green),
+                    onPressed: () {
+                      setState(() {
+                        final currentQuantity =
+                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        controllers[productName]?.text = (currentQuantity + 1).toString();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                height: 30.0, // Adjust the height as needed
+                child: TextField(
+                  controller: controllers[productName],
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center, // Horizontally center the text
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Qty',
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.0), // Vertically centering the text
+                  ),
+                  style: const TextStyle(fontSize: 14.0),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const Divider(  // Divider between the products
+        thickness: 1.0,  // Line thickness
+        color: Colors.grey,  // Line color
+      ),
+    ],
+  );
+}
+
                     ),
                   ),
                 ),
-                // Footer
-                Container(
-                  padding: const EdgeInsets.all(10.0),
-                  color: Colors.teal[100], // Set background color
-                  child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceAround, // Space buttons evenly
-                    children: [
-                      // Buy Now Button
-                      ElevatedButton(
-                        onPressed: () {
-                          // Add your action for 'Buy Now' here
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Buy Now clicked')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Button color
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    padding: const EdgeInsets.all(10.0),
+                    color: Colors.teal[100],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Buy Now clicked')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          child: const Text('Buy Now'),
                         ),
-                        child: const Text('Buy Now'),
-                      ),
-                      // Add to Cart Button
-                      ElevatedButton(
-                        onPressed: () {
-                          // Add your action for 'Add to Cart' here
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Added to Cart')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue, // Button color
+                        ElevatedButton(
+                          onPressed: _addToGlobalCart,
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                          child: const Text('Add to Cart'),
                         ),
-                        child: const Text('Add to Cart'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
-            );
-          }
-        },
-      ),
+            ),
     );
   }
 }
