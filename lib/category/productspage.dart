@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
+import 'package:van_app_demo/cart_page.dart';
+import 'package:van_app_demo/homepage.dart'; // Import the HomePage
+import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
+import 'package:van_app_demo/category/order_page.dart';
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -14,11 +17,15 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
+  List<Map<String, dynamic>> filteredProducts = [];
   bool isLoading = true;
-  bool hasMoreProducts = true;
-  DocumentSnapshot? lastDocument;
-  int currentPage = 1; // Track current page
-  int totalPages = 1; // Track total pages
+
+  // Search functionality
+  TextEditingController searchController = TextEditingController();
+  FocusNode searchFocusNode = FocusNode();
+
+  // ScrollController for smooth scrolling
+  final ScrollController _scrollController = ScrollController();
 
   Future<void> _loadProducts() async {
     setState(() {
@@ -28,38 +35,26 @@ class _ProductsPageState extends State<ProductsPage> {
     final productCollection = FirebaseFirestore.instance.collection('product');
 
     try {
-      // Fetching products for the current page
-      Query query = productCollection
+      final snapshot = await productCollection
           .where('category', isEqualTo: widget.categoryTitle)
-          .limit(10);
-
-      if (currentPage > 1 && lastDocument != null) {
-        query = query.startAfterDocument(lastDocument!);
-      }
-
-      final snapshot = await query.get();
+          .get();
 
       if (snapshot.docs.isNotEmpty) {
         setState(() {
-          lastDocument = snapshot.docs.last;
-          hasMoreProducts = snapshot.docs.length == 10;
-
-          // If it's the first page, replace the product list; otherwise, append
-          if (currentPage == 1) {
-            products = snapshot.docs
-                .map((doc) => doc.data() as Map<String, dynamic>)
-                .toList();
-          } else {
-            products.addAll(snapshot.docs
-                .map((doc) => doc.data() as Map<String, dynamic>)
-                .toList());
-          }
+          products = snapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+          filteredProducts = products; // Initially, all products are shown
         });
 
-        // Fetch total product count (not from snapshot)
-        await _fetchTotalProductsCount();
-        
-        // Initialize controllers for new products
+        // Sort products by product_id
+        products.sort((a, b) {
+          final idA = a['product_id'] ?? '';
+          final idB = b['product_id'] ?? '';
+          return idA.compareTo(idB); // Sorting lexicographically
+        });
+
+        // Initialize controllers for products
         for (var product in products) {
           final productName = product['title'] ?? 'Unknown';
           if (!controllers.containsKey(productName)) {
@@ -76,31 +71,58 @@ class _ProductsPageState extends State<ProductsPage> {
     });
   }
 
-  Future<void> _fetchTotalProductsCount() async {
-    try {
-      final productCollection = FirebaseFirestore.instance.collection('product');
-      final snapshot = await productCollection
-          .where('category', isEqualTo: widget.categoryTitle)
-          .get();
-
-      final totalProducts = snapshot.size; // Get the total count from the snapshot
-      totalPages = (totalProducts / 10).ceil(); // Calculate total pages
-    } catch (e) {
-      print('Error fetching total product count: $e');
+  // Function to handle the search query
+  void _filterProducts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredProducts = products;
+      });
+    } else {
+      setState(() {
+        filteredProducts = products
+            .where((product) {
+              final productName = product['title']?.toLowerCase() ?? '';
+              return productName.contains(query.toLowerCase());
+            })
+            .toList();
+      });
     }
   }
 
-  void _addToGlobalCart() {
-    for (var product in products) {
+  // Function to programmatically scroll
+  void _scrollToPosition(double offset,
+      {Duration? duration, Curve curve = Curves.easeInOut}) {
+    _scrollController.animateTo(
+      offset,
+      duration: duration ?? const Duration(milliseconds: 200), // Adjust duration for speed control
+      curve: curve,
+    );
+  }
+
+  // Function to reset all quantities
+  void _resetQuantities() {
+    setState(() {
+      controllers.forEach((key, controller) {
+        controller.text = '0';
+      });
+    });
+  }
+
+  Future<void> _addToGlobalCart() async {
+    for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       if (quantity > 0) {
-        final existingIndex = Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
+        // Check if the product already exists in the global cart
+        final existingIndex =
+            Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
 
         if (existingIndex >= 0) {
-          Cart.selectedProducts[existingIndex]['quantity'] += quantity;
+          // Replace the quantity with the current value from the Qty box
+          Cart.selectedProducts[existingIndex]['quantity'] = quantity;
         } else {
+          // Add a new product to the cart
           Cart.selectedProducts.add({
             ...product,
             'quantity': quantity,
@@ -110,8 +132,10 @@ class _ProductsPageState extends State<ProductsPage> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Products added to cart!')),
-
+      const SnackBar(
+        content: Text('Products added to cart!'),
+        duration: Duration(seconds: 1),
+      ),
     );
   }
 
@@ -121,158 +145,246 @@ class _ProductsPageState extends State<ProductsPage> {
     _loadProducts();
   }
 
-  void _goToPage(int page) {
-    if (page > 0 && page <= totalPages && page != currentPage) {
-      setState(() {
-        currentPage = page;
-        products.clear();
-      });
-      _loadProducts();
-    }
+  @override
+  void dispose() {
+    searchController.dispose();
+    searchFocusNode.dispose();
+    _scrollController.dispose(); // Dispose the scroll controller
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar with Cart Icon and Hamburger Menu (on the right side)
       appBar: AppBar(
         title: Text(widget.categoryTitle),
         backgroundColor: Colors.teal,
         actions: [
+          // Cart Button
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
+              // Reset all quantities before navigating to the cart page
+              _resetQuantities();
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CartPage()),
               );
             },
           ),
+
+          // Hamburger Menu (on the right side)
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  // Open Drawer on the right side
+                  Scaffold.of(context).openEndDrawer();
+                },
+              );
+            },
+          ),
         ],
       ),
-      body: isLoading && products.isEmpty
+
+      // Drawer on the right side (simulated right drawer)
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+           const DrawerHeader(
+              decoration:  BoxDecoration(
+                color: Colors.teal,
+              ),
+              child:  Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                // Navigate to HomePage when "Home" is tapped
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Cart'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Categories'),
+              onTap: () {
+                // Navigate to CategoryPage when "Categories" is tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CategoryPage()),
+                );
+              },
+            ),
+            // Add Order menu item
+            ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text('Orders'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                // Handle Logout action
+              },
+            ),
+          ],
+        ),
+      ),
+
+      // Body content for the ProductsPage
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: searchController,
+                    focusNode: searchFocusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Search Products',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: _filterProducts, // Filter products as the user types
+                  ),
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ListView.builder(
-                      itemCount: products.length,
+                      controller: _scrollController, // Assign ScrollController
+                      itemCount: filteredProducts.length,
                       itemBuilder: (context, index) {
-                        final product = products[index];
+                        final product = filteredProducts[index];
                         final productName = product['title'] ?? 'Unknown';
-                        final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        final sellingPrice =
+                            product['selling_price']?.toString() ?? '0.00';
+                        final quantity =
+                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
-                        return Card(
-                          elevation: 4.0,
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    productName,
-                                    style: const TextStyle(
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 3,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle),
-                                        color: Colors.red,
-                                        onPressed: () {
-                                          setState(() {
-                                            if (quantity > 0) {
-                                              controllers[productName]?.text =
-                                                  (quantity - 1).toString();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      Text(
-                                        quantity.toString(),
-                                        style: const TextStyle(
-                                          fontSize: 16.0,
-                                          fontWeight: FontWeight.bold,
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced padding here
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          productName,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.add_circle),
-                                        color: Colors.green,
-                                        onPressed: () {
-                                          setState(() {
-                                            controllers[productName]?.text =
-                                                (quantity + 1).toString();
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    controller: controllers[productName],
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      labelText: 'Qty',
+                                        Text(
+                                          '\$ $sellingPrice',
+                                          style: const TextStyle(
+                                            fontSize: 14.0,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        final newQuantity = int.tryParse(value) ?? 0;
-                                        controllers[productName]?.text =
-                                            newQuantity < 0 ? '0' : newQuantity.toString();
-                                      });
-                                    },
                                   ),
-                                ),
-                              ],
+                                  Expanded(
+                                    flex: 2,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.remove, color: Colors.red),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              if (currentQuantity > 0) {
+                                                controllers[productName]?.text = (currentQuantity - 1).toString();
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add, color: Colors.green),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              controllers[productName]?.text = (currentQuantity + 1).toString();
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: TextField(
+                                      controller: controllers[productName],
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      decoration: const InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        labelText: 'Qty',
+                                        contentPadding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0), // Reducing padding to decrease height
+                                      ),
+                                      style: const TextStyle(fontSize: 14.0), // Reduce font size to make the input smaller
+                                      onChanged: (value) {
+                                        setState(() {
+                                          final newQuantity = int.tryParse(value) ?? 0;
+                                          controllers[productName]?.text =
+                                              newQuantity < 0 ? '0' : newQuantity.toString();
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const Divider(
+                              thickness: 1.0, // Controls the thickness of the line
+                              color: Colors.grey, // Sets the line color
+                            ),
+                          ],
                         );
                       },
                     ),
                   ),
                 ),
-                // Pagination above the footer
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      totalPages,
-                      (index) => GestureDetector(
-                        onTap: () {
-                          _goToPage(index + 1);
-                        },
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: currentPage == (index + 1)
-                              ? Colors.teal
-                              : Colors.grey,
-                          child: Text(
-                            (index + 1).toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ).toList(),
-                  ),
-                ),
-                // Footer with buttons
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
