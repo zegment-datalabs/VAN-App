@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -99,71 +99,56 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_formKey.currentState!.validate()) {
       try {
         final inputText = _emailOrPhoneController.text.trim();
-        UserCredential userCredential;
 
-        if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: inputText,
-            password: _passwordController.text.trim(),
-          );
-        } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(inputText)) {
-          await FirebaseAuth.instance.verifyPhoneNumber(
-            phoneNumber: inputText,
-            verificationCompleted: (PhoneAuthCredential credential) async {
-              userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-            },
-            verificationFailed: (FirebaseAuthException e) {
-              throw e;
-            },
-            codeSent: (String verificationId, int? resendToken) async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('OTP sent to phone number!')),
-              );
-            },
-            codeAutoRetrievalTimeout: (String verificationId) {},
+        // Step 1: Validate email format
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter a valid email address.')),
           );
           return;
-        } else {
-          throw FirebaseAuthException(
-            code: 'invalid-input',
-            message: 'Please enter a valid email address or phone number',
-          );
         }
 
-        final userId = userCredential.user!.uid;
-        final profileImageUrl = await _uploadImage(userId);
-
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'name': _nameController.text.trim(),
-          'emailOrPhone': inputText,
-          'profileImageUrl': profileImageUrl,
-        });
-
-        // Save user data to SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        prefs.setString('emailPhone', inputText);
-        prefs.setString('profilePicPath', profileImageUrl ?? 'default-avatar-url');
-        prefs.setBool('isLoggedIn', true);
-
-        await userCredential.user!.sendEmailVerification();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign-Up Successful! Please verify your email.')),
+        // Step 2: Create user in Firebase Auth
+        final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: inputText,
+          password: _passwordController.text.trim(),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        final User? user = userCredential.user;
+
+        if (user != null) {
+          // Step 3: Send email verification
+          await user.sendEmailVerification();
+
+          // Step 4: Save additional user details to Firestore
+          final userId = user.uid;
+          final profileImageUrl = await _uploadImage(userId);
+
+          await FirebaseFirestore.instance.collection('users').doc(userId).set({
+            'name': _nameController.text.trim(),
+            'emailOrPhone': inputText,
+            'profileImageUrl': profileImageUrl,
+            'isVerified': false, // Track verification status
+          });
+
+          // Step 5: Inform user and navigate
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sign-Up Successful! Verify your email before logging in.')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       } on FirebaseAuthException catch (e) {
         String errorMessage;
 
         if (e.code == 'email-already-in-use') {
           errorMessage = 'This email is already in use.';
-        } else if (e.code == 'invalid-email') {
-          errorMessage = 'Invalid email address.';
         } else if (e.code == 'weak-password') {
           errorMessage = 'Password is too weak.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Invalid email format. Please enter a correct email address.';
         } else {
           errorMessage = 'An error occurred. Please try again.';
         }
@@ -175,7 +160,6 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  // Navigate to Login Page
   void _navigateToSignIn() {
     Navigator.push(
       context,
@@ -325,25 +309,22 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Common function to build text fields
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,
     required IconData icon,
     bool obscureText = false,
-    Widget? suffixIcon,
     String? Function(String?)? validator,
+    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon),
         labelText: labelText,
+        prefixIcon: Icon(icon),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: validator,
     );
