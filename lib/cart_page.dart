@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:van_app_demo/category/allproducts.dart';
+import 'category/order_page.dart';
 
 class Cart {
   // Store the selected products in the cart
@@ -37,18 +39,16 @@ class CartPageState extends State<CartPage> {
   }
 
   // Calculate the total price of all products in the cart
- double calculateTotalAmount() {
-  double total = Cart.selectedProducts.fold<double>(
-    0.0,
-    (total, product) {
-      final quantity = product['quantity'] is int ? product['quantity'] : 0;
-      final sellingPrice = double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
-      return total + (quantity * sellingPrice);
-    },
-  );
-  return total;
-}
-
+  double calculateTotalAmount() {
+    return Cart.selectedProducts.fold<double>(
+      0.0,
+      (total, product) {
+        final quantity = product['quantity'] is int ? product['quantity'] : 0;
+        final sellingPrice = double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
+        return total + (quantity * sellingPrice);
+      },
+    );
+  }
 
   // Calculate the total quantity of all products in the cart
   int calculateTotalQuantity() {
@@ -84,6 +84,15 @@ class CartPageState extends State<CartPage> {
                   searchFocusNode.unfocus();
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AllProductsPage()),
+              );
             },
           ),
         ],
@@ -164,17 +173,14 @@ class CartPageState extends State<CartPage> {
                                       color: Colors.grey[600],
                                     ),
                                   ),
-                                  
-                                Text(
-                                  '₹${(double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 14.0,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                  Text(
+                                    '₹${(double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 14.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
                                   ),
-                                ),
-
-
                                 ],
                               ),
                               trailing: Row(
@@ -212,13 +218,6 @@ class CartPageState extends State<CartPage> {
                                       setState(() {
                                         Cart.selectedProducts.removeAt(index);
                                       });
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Item removed from cart')),
-                                      );
                                     },
                                   ),
                                 ],
@@ -228,10 +227,10 @@ class CartPageState extends State<CartPage> {
                           if (index < filteredProducts.length - 1)
                             const Divider(
                               thickness: 1.0,
-                              height: 1.0, // Tight space between items
-                              color: Colors.black, // Black line color
-                              indent: 0.0, // Full width
-                              endIndent: 0.0, // Full width
+                              height: 1.0,
+                              color: Colors.black,
+                              indent: 0.0,
+                              endIndent: 0.0,
                             ),
                         ],
                       );
@@ -239,37 +238,79 @@ class CartPageState extends State<CartPage> {
                   ),
           ),
           // Footer with Total and Place Order Button
-        Container(
+          Container(
             color: Colors.white,
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Text(
-                  'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 5, 7, 7),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order Placed!')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
+                      style: const TextStyle(
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 5, 7, 7),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Place Order',
-                    style: TextStyle(fontSize: 16.0),
-                  ),
+                    ElevatedButton(
+                      onPressed: Cart.selectedProducts.isEmpty
+                          ? null
+                          : () {
+                              double orderValue = calculateTotalAmount();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => OrderPage(
+                                    orderValue: orderValue,
+                                    quantity: orderValue,
+                                    selectedProducts: Cart.selectedProducts,
+                                    
+                                  ),
+                                ),
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Cart.selectedProducts.isEmpty
+                            ? Colors.grey
+                            : Colors.teal,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      child: const Text(
+                        'Place Order',
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                    ),
+                  ],
                 ),
+              //   const SizedBox(height: 16.0),
+              //  // Show a list of the added products in the footer
+              //   if (Cart.selectedProducts.isNotEmpty)
+              //     Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         const Text(
+              //           'Added Products:',
+              //           style: TextStyle(
+              //             fontSize: 14.0,
+              //             fontWeight: FontWeight.bold,
+              //             color: Colors.teal,
+              //           ),
+              //         ),
+              //         ...Cart.selectedProducts.map((product) {
+              //           return Text(
+              //             '${product['title']} x${product['quantity']}',
+              //             style: TextStyle(
+              //               fontSize: 14.0,
+              //               color: Colors.grey[700],
+              //             ),
+              //           );
+              //         }).toList(),
+              //       ],
+              //     ),
               ],
             ),
           ),

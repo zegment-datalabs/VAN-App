@@ -1,5 +1,7 @@
+// login_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'category/categorypage.dart';
 import 'signup_page.dart';
 
@@ -19,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   String? _emailError;
   String? _passwordError;
 
+  // Handle Login Functionality
   void _login() async {
     setState(() {
       _emailError = null;
@@ -29,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
       try {
         final inputText = _emailPhoneController.text.trim();
 
-        // Check if input is a valid email
+        // Validate Email Format
         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
           setState(() {
             _emailError = 'Please enter a valid email address.';
@@ -37,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
           return;
         }
 
-        // Attempt to sign in with email and password
+        // Firebase Authentication Sign-In
         final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: inputText,
           password: _passwordController.text.trim(),
@@ -53,12 +56,18 @@ class _LoginPageState extends State<LoginPage> {
               _emailError = 'Email not verified. Verification email sent. Please verify and try again.';
             });
 
-            // Sign the user out after sending the verification email
+            // Sign out after sending verification email
             await FirebaseAuth.instance.signOut();
             return;
           }
 
-          // Navigate to the next page (e.g., CategoryPage) if email is verified
+          // Save user details to SharedPreferences (including name)
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('emailPhone', user.email ?? '');
+          await prefs.setString('userName', user.displayName ?? 'User');
+          await prefs.setString('profilePicPath', user.photoURL ?? 'https://via.placeholder.com/150');
+
+          // Navigate to the Category Page
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const CategoryPage()),
@@ -75,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
           });
         } else {
           setState(() {
-            _emailError = 'Invalid email. Verify your email.';
+            _emailError = 'An error occurred. Please try again.';
           });
         }
       }
@@ -99,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Email/Phone Input
+                // Email/Phone Input Field
                 TextFormField(
                   controller: _emailPhoneController,
                   decoration: InputDecoration(
@@ -119,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 10.0),
 
-                // Password Input
+                // Password Input Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -139,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
-                    errorText: _passwordError, // Bind the password error message
+                    errorText: _passwordError,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -148,7 +157,6 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
-                
                 const SizedBox(height: 20.0),
 
                 // Login Button
@@ -168,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 10.0),
 
-                // Forgot Password (optional)
+                // Forgot Password
                 TextButton(
                   onPressed: () {
                     // Implement forgot password functionality
@@ -180,14 +188,13 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 10.0),
 
-                // Sign Up Redirect
+                // Redirect to Sign Up
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text('Don\'t have an account?'),
                     TextButton(
                       onPressed: () {
-                        // Navigate to Sign Up page
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const SignUpPage()),

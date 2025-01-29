@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/cart_page.dart';
-import 'package:van_app_demo/homepage.dart'; // Import the HomePage
-import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
+import 'package:van_app_demo/homepage.dart';
+import 'package:van_app_demo/category/categorypage.dart';
 import 'package:van_app_demo/category/order_page.dart';
 
 class AllProductsPage extends StatefulWidget {
@@ -40,16 +40,15 @@ class _AllProductsPageState extends State<AllProductsPage> {
           products = snapshot.docs
               .map((doc) => doc.data() as Map<String, dynamic>)
               .toList();
-          filteredProducts = products; // Initially, all products are shown
+          filteredProducts = products;
         });
 
         // Sort products alphabetically by product title
-products.sort((a, b) {
-  final titleA = a['title']?.toLowerCase() ?? '';
-  final titleB = b['title']?.toLowerCase() ?? '';
-  return titleA.compareTo(titleB); // Sorting alphabetically (case-insensitive)
-});
-
+        products.sort((a, b) {
+          final titleA = a['title']?.toLowerCase() ?? '';
+          final titleB = b['title']?.toLowerCase() ?? '';
+          return titleA.compareTo(titleB);
+        });
 
         // Initialize controllers for products
         for (var product in products) {
@@ -68,7 +67,7 @@ products.sort((a, b) {
     });
   }
 
-  // Function to handle the search query
+  // Function to filter products based on search query
   void _filterProducts(String query) {
     if (query.isEmpty) {
       setState(() {
@@ -93,6 +92,21 @@ products.sort((a, b) {
         controller.text = '0';
       });
     });
+  }
+
+  // Function to calculate the total amount
+  double calculateTotalAmount() {
+    double total = 0.0;
+
+    for (var product in filteredProducts) {
+      final productName = product['title'] ?? 'Unknown';
+      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.0') ?? 0.0;
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+      total += sellingPrice * quantity;
+    }
+
+    return total;
   }
 
   Future<void> _addToGlobalCart() async {
@@ -136,7 +150,7 @@ products.sort((a, b) {
   void dispose() {
     searchController.dispose();
     searchFocusNode.dispose();
-    _scrollController.dispose(); // Dispose the scroll controller
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -147,7 +161,6 @@ products.sort((a, b) {
         title: const Text('All Products'),
         backgroundColor: Colors.teal,
         actions: [
-          // Cart Button
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
@@ -158,7 +171,6 @@ products.sort((a, b) {
               );
             },
           ),
-          // Hamburger Menu (on the right side)
           Builder(
             builder: (context) {
               return IconButton(
@@ -171,8 +183,6 @@ products.sort((a, b) {
           ),
         ],
       ),
-
-      // Drawer on the right side (simulated right drawer)
       endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -181,12 +191,20 @@ products.sort((a, b) {
               decoration: BoxDecoration(
                 color: Colors.teal,
               ),
-              child: Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  SizedBox(height: 10.0),
+                  Text(
+                    'User Name',
+                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+                  ),
+                ],
               ),
             ),
             ListTile(
@@ -219,25 +237,19 @@ products.sort((a, b) {
                 );
               },
             ),
-             ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('All products'),
-              onTap: () {
-                // Navigate to CategoryPage when "Categories" is tapped
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
-                );
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.assignment),
               title: const Text('Orders'),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => OrderPage()),
-                );
+                double orderValue = calculateTotalAmount();
+                 Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => OrderPage(orderValue: orderValue,
+                                  quantity:orderValue,
+                                  selectedProducts: Cart.selectedProducts),
+                                ),
+                              );
               },
             ),
             ListTile(
@@ -250,7 +262,6 @@ products.sort((a, b) {
           ],
         ),
       ),
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -274,99 +285,117 @@ products.sort((a, b) {
                     child: ListView.builder(
                       controller: _scrollController,
                       itemCount: filteredProducts.length,
-                  itemBuilder: (context, index) {
-  final product = filteredProducts[index];
-  final productName = product['title'] ?? 'Unknown';
-   final sellingPrice = product['selling_price']?.toString() ?? '0.00';
-  final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        final productName = product['title'] ?? 'Unknown';
+                        final sellingPrice =
+                            product['selling_price']?.toString() ?? '0.00';
 
-  return Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced vertical space between products
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    productName,
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                   
-                                Text(
-                    '\$ $sellingPrice',
-                    style: const TextStyle(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.red),
-                    onPressed: () {
-                      setState(() {
-                        final currentQuantity =
-                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-                        if (currentQuantity > 0) {
-                          controllers[productName]?.text = (currentQuantity - 1).toString();
-                        }
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
-                    onPressed: () {
-                      setState(() {
-                        final currentQuantity =
-                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-                        controllers[productName]?.text = (currentQuantity + 1).toString();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                height: 30.0, // Adjust the height as needed
-                child: TextField(
-                  controller: controllers[productName],
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center, // Horizontally center the text
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Qty',
-                    contentPadding: EdgeInsets.symmetric(vertical: 8.0), // Vertically centering the text
-                  ),
-                  style: const TextStyle(fontSize: 14.0),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const Divider(  // Divider between the products
-        thickness: 1.0,  // Line thickness
-        color: Colors.grey,  // Line color
-      ),
-    ],
-  );
-}
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          productName,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\$ $sellingPrice',
+                                          style: const TextStyle(
+                                            fontSize: 14.0,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.remove,
+                                              color: Colors.red),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[
+                                                              productName]
+                                                          ?.text ??
+                                                      '0') ??
+                                                      0;
+                                              if (currentQuantity > 0) {
+                                                controllers[productName]?.text =
+                                                    (currentQuantity - 1)
+                                                        .toString();
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add,
+                                              color: Colors.green),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[
+                                                              productName]
+                                                          ?.text ??
+                                                      '0') ??
+                                                      0;
+                                              controllers[productName]?.text =
+                                                  (currentQuantity + 1)
+                                                      .toString();
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: SizedBox(
+                                      height: 30.0,
+                                      child: TextField(
+                                        controller: controllers[productName],
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          labelText: 'Qty',
+                                          contentPadding:
+                                              EdgeInsets.symmetric(
+                                                  vertical: 8.0),
+                                        ),
+                                        style:
+                                            const TextStyle(fontSize: 14.0),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(
+                              thickness: 1.0,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -384,12 +413,14 @@ products.sort((a, b) {
                               const SnackBar(content: Text('Buy Now clicked')),
                             );
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green),
                           child: const Text('Buy Now'),
                         ),
                         ElevatedButton(
                           onPressed: _addToGlobalCart,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue),
                           child: const Text('Add to Cart'),
                         ),
                       ],

@@ -80,12 +80,10 @@ class _ProductsPageState extends State<ProductsPage> {
       });
     } else {
       setState(() {
-        filteredProducts = products
-            .where((product) {
-              final productName = product['title']?.toLowerCase() ?? '';
-              return productName.contains(query.toLowerCase());
-            })
-            .toList();
+        filteredProducts = products.where((product) {
+          final productName = product['title']?.toLowerCase() ?? '';
+          return productName.contains(query.toLowerCase());
+        }).toList();
       });
     }
   }
@@ -95,7 +93,9 @@ class _ProductsPageState extends State<ProductsPage> {
       {Duration? duration, Curve curve = Curves.easeInOut}) {
     _scrollController.animateTo(
       offset,
-      duration: duration ?? const Duration(milliseconds: 200), // Adjust duration for speed control
+      duration: duration ??
+          const Duration(
+              milliseconds: 200), // Adjust duration for speed control
       curve: curve,
     );
   }
@@ -109,10 +109,12 @@ class _ProductsPageState extends State<ProductsPage> {
     });
   }
 
-   Future<void> _addToGlobalCart() async {
+  Future<void> _addToGlobalCart() async {
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
-      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
+      final sellingPrice =
+          double.tryParse(product['selling_price']?.toString() ?? '0.00') ??
+              0.0;
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       if (quantity > 0) {
@@ -140,6 +142,22 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
+  // Calculate the total amount based on the filtered products and quantities
+  double calculateTotalAmount() {
+    double total = 0.0;
+
+    for (var product in filteredProducts) {
+      final productName = product['title'] ?? 'Unknown';
+      final sellingPrice =
+          double.tryParse(product['selling_price']?.toString() ?? '0.0') ?? 0.0;
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+      total += sellingPrice * quantity;
+    }
+
+    return total;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -157,7 +175,6 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar with Cart Icon and Hamburger Menu (on the right side)
       appBar: AppBar(
         title: Text(widget.categoryTitle),
         backgroundColor: Colors.teal,
@@ -166,7 +183,6 @@ class _ProductsPageState extends State<ProductsPage> {
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
-              // Reset all quantities before navigating to the cart page
               _resetQuantities();
               Navigator.push(
                 context,
@@ -181,7 +197,6 @@ class _ProductsPageState extends State<ProductsPage> {
               return IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () {
-                  // Open Drawer on the right side
                   Scaffold.of(context).openEndDrawer();
                 },
               );
@@ -189,29 +204,34 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ],
       ),
-
-      // Drawer on the right side (simulated right drawer)
       endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-           const DrawerHeader(
-              decoration:  BoxDecoration(
+            const DrawerHeader(
+              decoration: BoxDecoration(
                 color: Colors.teal,
               ),
-              child:  Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  SizedBox(height: 10.0),
+                  Text(
+                    'User Name',
+                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+                  ),
+                ],
               ),
             ),
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Home'),
               onTap: () {
-                // Navigate to HomePage when "Home" is tapped
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const HomePage()),
@@ -232,7 +252,6 @@ class _ProductsPageState extends State<ProductsPage> {
               leading: const Icon(Icons.category),
               title: const Text('Categories'),
               onTap: () {
-                // Navigate to CategoryPage when "Categories" is tapped
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CategoryPage()),
@@ -243,22 +262,26 @@ class _ProductsPageState extends State<ProductsPage> {
               leading: const Icon(Icons.category),
               title: const Text('All products'),
               onTap: () {
-                // Navigate to CategoryPage when "Categories" is tapped
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AllProductsPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const AllProductsPage()),
                 );
               },
             ),
-            // Add Order menu item
             ListTile(
               leading: const Icon(Icons.assignment),
               title: const Text('Orders'),
               onTap: () {
+                double orderValue = calculateTotalAmount();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => OrderPage(),
+                    builder: (context) => OrderPage(
+                      orderValue: orderValue,
+                      quantity: orderValue,
+                      selectedProducts: Cart.selectedProducts,
+                    ),
                   ),
                 );
               },
@@ -273,8 +296,6 @@ class _ProductsPageState extends State<ProductsPage> {
           ],
         ),
       ),
-
-      // Body content for the ProductsPage
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -289,108 +310,123 @@ class _ProductsPageState extends State<ProductsPage> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.search),
                     ),
-                    onChanged: _filterProducts, // Filter products as the user types
+                    onChanged: _filterProducts,
                   ),
                 ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ListView.builder(
-                      controller: _scrollController, // Assign ScrollController
+                      controller: _scrollController,
                       itemCount: filteredProducts.length,
-                     itemBuilder: (context, index) {
-  final product = filteredProducts[index];
-  final productName = product['title'] ?? 'Unknown';
-  final sellingPrice = product['selling_price']?.toString() ?? '0.00';
-  final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        final productName = product['title'] ?? 'Unknown';
+                        final sellingPrice =
+                            product['selling_price']?.toString() ?? '0.00';
+                        final quantity = int.tryParse(
+                                controllers[productName]?.text ?? '0') ??
+                            0;
 
-  return Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced vertical space between products
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    productName,
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '\$ $sellingPrice',
-                    style: const TextStyle(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.red),
-                    onPressed: () {
-                      setState(() {
-                        final currentQuantity =
-                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-                        if (currentQuantity > 0) {
-                          controllers[productName]?.text = (currentQuantity - 1).toString();
-                        }
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
-                    onPressed: () {
-                      setState(() {
-                        final currentQuantity =
-                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-                        controllers[productName]?.text = (currentQuantity + 1).toString();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                height: 30.0, // Adjust the height as needed
-                child: TextField(
-                  controller: controllers[productName],
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center, // Horizontally center the text
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Qty',
-                    contentPadding: EdgeInsets.symmetric(vertical: 8.0), // Vertically centering the text
-                  ),
-                  style: const TextStyle(fontSize: 14.0),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const Divider(  // Divider between the products
-        thickness: 1.0,  // Line thickness
-        color: Colors.grey,  // Line color
-      ),
-    ],
-  );
-}
-
+                        return Column(
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          productName,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\$ $sellingPrice',
+                                          style: const TextStyle(
+                                            fontSize: 14.0,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.remove,
+                                              color: Colors.red),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[
+                                                                  productName]
+                                                              ?.text ??
+                                                          '0') ??
+                                                      0;
+                                              if (currentQuantity > 0) {
+                                                controllers[productName]?.text =
+                                                    (currentQuantity - 1)
+                                                        .toString();
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add,
+                                              color: Colors.green),
+                                          onPressed: () {
+                                            setState(() {
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[
+                                                                  productName]
+                                                              ?.text ??
+                                                          '0') ??
+                                                      0;
+                                              controllers[productName]?.text =
+                                                  (currentQuantity + 1)
+                                                      .toString();
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Container(
+                                      height: 30.0,
+                                      child: TextField(
+                                        controller: controllers[productName],
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          labelText: 'Qty',
+                                        ),
+                                        style: const TextStyle(fontSize: 14.0),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -404,16 +440,22 @@ class _ProductsPageState extends State<ProductsPage> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Buy Now clicked')),
+                            _addToGlobalCart();
+                            _resetQuantities();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const CartPage()),
                             );
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green),
                           child: const Text('Buy Now'),
                         ),
                         ElevatedButton(
                           onPressed: _addToGlobalCart,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue),
                           child: const Text('Add to Cart'),
                         ),
                       ],

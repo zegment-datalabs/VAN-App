@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'category/allproducts.dart';
+import 'package:van_app_demo/updationpage.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,8 +16,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String? userEmail;
   String? profilePicPath;
-  final FirebaseFirestore db = FirebaseFirestore.instance;
+  String? userName;
 
+  final FirebaseFirestore db = FirebaseFirestore.instance;
+  
   @override
   void initState() {
     super.initState();
@@ -27,8 +31,8 @@ class _HomePageState extends State<HomePage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       userEmail = prefs.getString('emailPhone') ?? 'Guest';
-      profilePicPath =
-          prefs.getString('profilePicPath') ?? 'default-avatar-url';
+      profilePicPath = prefs.getString('profilePicPath') ?? 'https://via.placeholder.com/150';
+      userName = prefs.getString('userName') ?? 'Guest';
     });
   }
 
@@ -1341,22 +1345,29 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Home'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (profilePicPath != null)
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: NetworkImage(profilePicPath!),
-              ),
-            const SizedBox(height: 10),
-            Text(
-              'Welcome, $userEmail',
-              style: const TextStyle(fontSize: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Display Profile Picture if URL is valid
+          if (profilePicPath != null && profilePicPath!.isNotEmpty)
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(profilePicPath!),
+            )
+          else
+            const CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage('https://via.placeholder.com/150'),
             ),
+          const SizedBox(height: 10),
+          Text(
+            'Welcome, $userEmail',
+            style: const TextStyle(fontSize: 24),
+          ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _addCategoryData,
@@ -1421,6 +1432,18 @@ class _HomePageState extends State<HomePage> {
     style: TextStyle(fontSize: 18, color: Colors.white),
   ),
 ),
+const SizedBox(height: 20),
+                      ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  UpdationPage()), 
+                        );
+                      },
+                      child: const Text('Update'),
+                    ),
 
           ],
         ),
