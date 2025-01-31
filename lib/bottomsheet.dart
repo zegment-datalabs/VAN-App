@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:van_app_demo/cart_page.dart';
-import 'package:van_app_demo/homepage.dart';
-import 'package:van_app_demo/category/categorypage.dart';
-import 'package:van_app_demo/category/order_page.dart';
 
-class AllProductsPage extends StatefulWidget {
-  const AllProductsPage({super.key});
+class Bottomsheet extends StatefulWidget {
+  final Function(List<Map<String, dynamic>>) onAddProduct;
+
+
+  const Bottomsheet({Key? key, required this.onAddProduct}) : super(key: key);
 
   @override
-  _AllProductsPageState createState() => _AllProductsPageState();
+  BottomsheetState createState() => BottomsheetState();
 }
 
-class _AllProductsPageState extends State<AllProductsPage> {
+class BottomsheetState extends State<Bottomsheet> {
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> filteredProducts = [];
@@ -75,70 +74,45 @@ class _AllProductsPageState extends State<AllProductsPage> {
       });
     } else {
       setState(() {
-        filteredProducts = products
-            .where((product) {
-              final productName = product['title']?.toLowerCase() ?? '';
-              return productName.contains(query.toLowerCase());
-            })
-            .toList();
+        filteredProducts = products.where((product) {
+          final productName = product['title']?.toLowerCase() ?? '';
+          return productName.contains(query.toLowerCase());
+        }).toList();
       });
     }
   }
 
-  // Function to reset all quantities
-  void _resetQuantities() {
-    setState(() {
-      controllers.forEach((key, controller) {
-        controller.text = '0';
+  // Function to update the list of products with modified quantities
+  void _updateProductList() {
+  List<Map<String, dynamic>> selectedProducts = [];
+
+  for (var product in filteredProducts) {
+    final productName = product['title'] ?? 'Unknown';
+    final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+
+    if (quantity > 0) {
+      selectedProducts.add({
+        'Product Name': productName,
+        'Category Name': product['category'] ?? 'Unknown',
+        'sellingprice': product['selling_price'] ?? 0.0,
+        'quantity': quantity,
       });
-    });
+    }
   }
 
-  // Function to calculate the total amount
-  double calculateTotalAmount() {
-    double total = 0.0;
-
-    for (var product in filteredProducts) {
-      final productName = product['title'] ?? 'Unknown';
-      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.0') ?? 0.0;
-      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-
-      total += sellingPrice * quantity;
-    }
-
-    return total;
-  }
-
-  Future<void> _addToGlobalCart() async {
-    for (var product in filteredProducts) {
-      final productName = product['title'] ?? 'Unknown';
-      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
-      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-
-      if (quantity > 0) {
-        final existingIndex =
-            Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
-
-        if (existingIndex >= 0) {
-          Cart.selectedProducts[existingIndex]['quantity'] = quantity;
-        } else {
-          Cart.selectedProducts.add({
-            'title': productName,
-            'category': product['category'] ?? 'Unknown',
-            'sellingPrice': sellingPrice,
-            'quantity': quantity,
-          });
-        }
-      }
-    }
-
+  //  Send all selected products to parent
+  if (selectedProducts.isNotEmpty) {
+    widget.onAddProduct(selectedProducts);
+  } else {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Products added to cart!'),
+        content: Text('No products selected!'),
         duration: Duration(seconds: 1),
       ),
     );
   }
+}
+
 
   @override
   void initState() {
@@ -157,111 +131,6 @@ class _AllProductsPageState extends State<AllProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Products'),
-        backgroundColor: Colors.teal,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              _resetQuantities();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartPage()),
-              );
-            },
-          ),
-          Builder(
-            builder: (context) {
-              return IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
-              );
-            },
-          ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.teal,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 30.0,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
-                  ),
-                  SizedBox(height: 10.0),
-                  Text(
-                    'User Name',
-                    style: TextStyle(color: Colors.white, fontSize: 20.0),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text('Cart'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Categories'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CategoryPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text('Orders'),
-              onTap: () {
-                double orderValue = calculateTotalAmount();
-                 Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => OrderPage(orderValue: orderValue,
-                                  quantity:orderValue,
-                                  selectedProducts: Cart.selectedProducts),
-                                ),
-                              );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                // Handle Logout action
-              },
-            ),
-          ],
-        ),
-      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -294,7 +163,8 @@ class _AllProductsPageState extends State<AllProductsPage> {
                         return Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -311,7 +181,7 @@ class _AllProductsPageState extends State<AllProductsPage> {
                                           ),
                                         ),
                                         Text(
-                                          '\$ $sellingPrice',
+                                          '\₹ $sellingPrice',
                                           style: const TextStyle(
                                             fontSize: 14.0,
                                             fontWeight: FontWeight.bold,
@@ -333,11 +203,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                              productName]
+                                                  int.tryParse(controllers[productName]
                                                           ?.text ??
                                                       '0') ??
-                                                      0;
+                                                  0;
                                               if (currentQuantity > 0) {
                                                 controllers[productName]?.text =
                                                     (currentQuantity - 1)
@@ -352,11 +221,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                              productName]
+                                                  int.tryParse(controllers[productName]
                                                           ?.text ??
                                                       '0') ??
-                                                      0;
+                                                  0;
                                               controllers[productName]?.text =
                                                   (currentQuantity + 1)
                                                       .toString();
@@ -377,12 +245,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
                                         decoration: const InputDecoration(
                                           border: OutlineInputBorder(),
                                           labelText: 'Qty',
-                                          contentPadding:
-                                              EdgeInsets.symmetric(
-                                                  vertical: 8.0),
+                                          contentPadding: EdgeInsets.symmetric(
+                                              vertical: 8.0),
                                         ),
-                                        style:
-                                            const TextStyle(fontSize: 14.0),
+                                        style: const TextStyle(fontSize: 14.0),
                                       ),
                                     ),
                                   ),
@@ -399,36 +265,13 @@ class _AllProductsPageState extends State<AllProductsPage> {
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    padding: const EdgeInsets.all(10.0),
-                    color: Colors.teal[100],
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            _addToGlobalCart();
-                            _resetQuantities();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const CartPage()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green),
-                          child: const Text('Buy Now'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _addToGlobalCart,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue),
-                          child: const Text('Add to Cart'),
-                        ),
-                      ],
-                    ),
+                // Add button in footer
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: ElevatedButton(
+                    onPressed: _updateProductList,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    child: const Text('Add'),
                   ),
                 ),
               ],

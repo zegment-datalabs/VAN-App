@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:van_app_demo/category/allproducts.dart';
-
-
+import 'package:van_app_demo/bottomsheet.dart';
 
 class UpdationPage extends StatefulWidget {
   @override
@@ -20,12 +18,13 @@ class _UpdationPageState extends State<UpdationPage> {
   bool isSearchVisible = false;
   String searchQuery = '';
 
+  List<Map<String, dynamic>> newProduct = [];
+
   @override
   void initState() {
     super.initState();
     fetchOrderIds();
   }
-  
 
   Future<void> fetchOrderIds() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -55,137 +54,143 @@ class _UpdationPageState extends State<UpdationPage> {
 
     setState(() {
       orderDetails = orderSnapshot.data() as Map<String, dynamic>?;
-      orderItems = orderItemsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      orderItems = orderItemsSnapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
     });
+  }
+
+  void _updateProductList(List<Map<String, dynamic>> newProducts) {
+    setState(() {
+      for (var newProduct in newProducts) {
+        final productName = newProduct['Product Name'] ?? 'Unknown';
+        final existingIndex = orderItems
+            .indexWhere((item) => item['Product Name'] == productName);
+
+        if (existingIndex != -1) {
+          orderItems[existingIndex]['quantity'] += newProduct['quantity'];
+        } else {
+          orderItems.add(newProduct);
+        }
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${newProducts.length} product(s) added!'),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   double calculateTotalAmount() {
     double totalAmount = 0.0;
     for (var item in orderItems) {
-      totalAmount += (double.tryParse(item['sellingprice']?.toString() ?? '0.0') ?? 0.0) * item['quantity'];
+      totalAmount +=
+          (double.tryParse(item['sellingprice']?.toString() ?? '0.0') ?? 0.0) *
+              item['quantity'];
     }
     return totalAmount;
   }
 
   int calculateTotalQuantity() {
-  int totalQuantity = 0;
-  for (var item in orderItems) {
-    totalQuantity += (item['quantity'] as num).toInt(); // Cast the num to int
-  }
-  return totalQuantity;
-}
-
-
-
-Future<void> refreshData() async {
-  setState(() {
-    orderIds.clear();
-    orderItems.clear();
-    orderDetails = null;
-  });
-
-  // Fetch orderIds and refresh order details
-  await fetchOrderIds();
-  if (selectedOrderId != null) {
-    await fetchOrderDetails(selectedOrderId!);
-  }
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Data Refreshed Successfully')),
-  );
-}
-
-
-Future<void> updateOrder(String orderId) async {
-  try {
-    // Get the reference to the order document
-    DocumentReference orderDocRef = FirebaseFirestore.instance.collection('order_masters').doc(orderId);
-
-    // Update the order master document
-    print("Updating order master...");
-    await orderDocRef.update({
-      'orderValue': calculateTotalAmount(), // Update the order value with the new total
-      'status': 'Updated', // Update the status
-      'orderTime': FieldValue.serverTimestamp(), // Set current timestamp for orderTime
-    });
-    print("Order master updated successfully.");
-
-    // Handle updates to the order items
+    int totalQuantity = 0;
     for (var item in orderItems) {
-      String title = item['Product Name']; // Use title here instead of productId
+      totalQuantity += (item['quantity'] as num).toInt();
+    }
+    return totalQuantity;
+  }
 
-      if (title == null || title.isEmpty) {
-        print("Error: Missing title for item, skipping update.");
-        continue; // Skip this item
+  Future<void> refreshData() async {
+    setState(() {
+      orderIds.clear();
+      orderItems.clear();
+      orderDetails = null;
+    });
+
+    await fetchOrderIds();
+    if (selectedOrderId != null) {
+      await fetchOrderDetails(selectedOrderId!);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data Refreshed Successfully')),
+    );
+  }
+
+  Future<void> updateOrder(String orderId) async {
+    try {
+      DocumentReference orderDocRef =
+          FirebaseFirestore.instance.collection('order_masters').doc(orderId);
+
+      await orderDocRef.update({
+        'orderValue': calculateTotalAmount(),
+        'status': 'Updated',
+        'orderTime': FieldValue.serverTimestamp(),
+      });
+
+      for (var item in orderItems) {
+        String title = item['Product Name'];
+        if (title == null || title.isEmpty) {
+          print("Error: Missing title for item, skipping update.");
+          continue;
+        }
+
+        QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
+            .collection('order_masters')
+            .doc(orderId)
+            .collection('order_details')
+            .where('Product Name', isEqualTo: title)
+            .get();
+
+        if (orderItemsSnapshot.docs.isEmpty) {
+          print("No order item found with title: $title. Skipping update.");
+        } else {
+          DocumentReference orderItemDocRef =
+              orderItemsSnapshot.docs.first.reference;
+
+          double? sellingprice = item['sellingprice'];
+          if (sellingprice == null) {
+            sellingprice = 0.0;
+          }
+
+          await orderItemDocRef.update({
+            'quantity': item['quantity'],
+            'sellingprice': sellingprice,
+            'Category Name': item['Category Name'],
+            'Product Name': item['Product Name'],
+          });
+        }
       }
 
-      print("Updating item with title: $title");
+      List<String> currentTitles =
+          orderItems.map((item) => item['Product Name'] as String).toList();
 
-      // Find the corresponding order item by title
       QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
           .collection('order_masters')
           .doc(orderId)
           .collection('order_details')
-          .where('Product Name', isEqualTo: title) // Query by product name
           .get();
 
-      if (orderItemsSnapshot.docs.isEmpty) {
-        print("No order item found with title: $title. Skipping update.");
-      } else {
-        // Get the reference of the first matching document (assuming title is unique)
-        DocumentReference orderItemDocRef = orderItemsSnapshot.docs.first.reference;
-
-        // Update the order item (quantity and selling price)
-        double? sellingprice = item['sellingprice'];
-        if (sellingprice == null) {
-          print("Warning: Selling price is null for title: $title. Setting it to 0.");
-          sellingprice = 0.0; // Default value for price if null
+      for (var doc in orderItemsSnapshot.docs) {
+        if (!currentTitles.contains(doc['Product Name'])) {
+          await doc.reference.delete();
         }
-
-        print("Updating order item: Quantity - ${item['quantity']}, Selling Price - $sellingprice");
-
-        await orderItemDocRef.update({
-          'quantity': item['quantity'], // Updated quantity
-          'sellingprice': sellingprice, // Updated selling price
-          'Category Name': item['Category Name'], // Update category name
-          'Product Name': item['Product Name'], // Update product name
-        });
-        print("Item with title: $title updated successfully.");
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order Updated Successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      print("Error during update: $e");
     }
-
-    // Handle item deletions (items removed from the order)
-    List<String> currentTitles = orderItems.map((item) => item['Product Name'] as String).toList();
-
-    QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
-        .collection('order_masters')
-        .doc(orderId)
-        .collection('order_details')
-        .get();
-
-    for (var doc in orderItemsSnapshot.docs) {
-      if (!currentTitles.contains(doc['Product Name'])) { // Compare by Product Name
-        // This item has been removed from the order in the app
-        await doc.reference.delete();
-        print("Removed item with title: ${doc['Product Name']} from Firestore.");
-      }
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Order Updated Successfully')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: $e')),
-    );
-    print("Error during update: $e");
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    // Filter order items based on search query
     final filteredOrderItems = orderItems.where((item) {
       final productTitle = item['Product Name']?.toLowerCase() ?? '';
       return productTitle.contains(searchQuery.toLowerCase());
@@ -197,15 +202,6 @@ Future<void> updateOrder(String orderId) async {
         backgroundColor: Colors.teal,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AllProductsPage()),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
@@ -221,9 +217,9 @@ Future<void> updateOrder(String orderId) async {
             },
           ),
           IconButton(
-      icon: const Icon(Icons.refresh),
-      onPressed: refreshData, // Call the refreshData method
-    ),
+            icon: const Icon(Icons.refresh),
+            onPressed: refreshData,
+          ),
         ],
       ),
       body: Padding(
@@ -231,13 +227,20 @@ Future<void> updateOrder(String orderId) async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DropdownButton<String>(
+            DropdownButtonFormField<String>(
               value: selectedOrderId,
               hint: const Text('Select Order ID'),
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                fillColor: const Color.fromARGB(255, 255, 255, 255),
+              ),
               items: orderIds.map((orderId) {
                 return DropdownMenuItem(
                   value: orderId,
-                  child: Text(orderId),
+                  child: Text(orderId,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 );
               }).toList(),
               onChanged: (value) {
@@ -253,6 +256,8 @@ Future<void> updateOrder(String orderId) async {
             if (orderDetails != null) ...[
               Card(
                 elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -262,14 +267,14 @@ Future<void> updateOrder(String orderId) async {
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       Text('Customer ID: ${orderDetails!['customerId']}'),
                       Text('Van ID: ${orderDetails!['vanId']}'),
-                      Text('Order Total: ₹${orderDetails!['orderValue']}'),
+                      Text(
+                          'Order Total: ₹${calculateTotalAmount().toStringAsFixed(2)}'),
                       Text('Status: ${orderDetails!['status']}'),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 10),
-              // Search bar visibility toggle
               if (isSearchVisible)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -300,8 +305,7 @@ Future<void> updateOrder(String orderId) async {
                   ),
                 ),
               const SizedBox(height: 10),
-              const Text('Ordered Products:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Ordered Products:'),
               Expanded(
                 child: filteredOrderItems.isEmpty
                     ? const Center(
@@ -320,69 +324,68 @@ Future<void> updateOrder(String orderId) async {
                           var item = filteredOrderItems[index];
 
                           return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4.0),
-                            elevation: 0.0,
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(8.0),
-                              title: Text(
-                                item['Product Name'] ?? 'Unknown Product',
-                                style: const TextStyle(
-                                  fontSize: 18.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal,
-                                ),
-                              ),
-                              subtitle: Column(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Category: ${item['Category Name'] ?? 'Unknown'}',
-                                    style: TextStyle(
-                                      fontSize: 14.0,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    'Quantity: ${item['quantity'] ?? 0}',
-                                    style: TextStyle(
-                                      fontSize: 14.0,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹${(double.tryParse(item['sellingprice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
+                                    item['Product Name'] ?? 'Unnamed Product',
                                     style: const TextStyle(
-                                      fontSize: 14.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  Text(
+                                     item['Category Name'] ?? 'Unnamed Category',
+                                    style: const TextStyle(
+                                      fontSize: 15.0,
+                                      color:  Color.fromARGB(255, 92, 91, 91),
                                     ),
                                   ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Decrement quantity or remove item
-                                  IconButton(
-                                    icon: const Icon(Icons.remove, color: Colors.red),
-                                    onPressed: () {
-                                      setState(() {
-                                        if (item['quantity'] > 1) {
-                                          item['quantity']--;
-                                        } else {
-                                          orderItems.removeAt(index);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  // Increment quantity
-                                  IconButton(
-                                    icon: const Icon(Icons.add, color: Colors.green),
-                                    onPressed: () {
-                                      setState(() {
-                                        item['quantity']++;
-                                      });
-                                    },
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.remove,
+                                                color: Colors.red),
+                                            onPressed: () {
+                                              setState(() {
+                                                int currentQuantity =
+                                                    item['quantity'];
+                                                if (currentQuantity > 0) {
+                                                  item['quantity'] -= 1;
+                                                }
+                                              });
+                                            },
+                                          ),
+                                          Text('Qty: ${item['quantity']}'),
+                                          IconButton(
+                                            icon: const Icon(Icons.add,
+                                                color: Colors.green),
+                                            onPressed: () {
+                                              setState(() {
+                                                item['quantity'] += 1;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '₹${(item['sellingprice'] ?? 0.0) * item['quantity']}',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -392,49 +395,65 @@ Future<void> updateOrder(String orderId) async {
                       ),
               ),
             ],
-            const SizedBox(height: 16.0),
-            // Footer with Total and Place Order Button
-            if (orderItems.isNotEmpty) ...[
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
-                      style: const TextStyle(
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 5, 7, 7),
-                      ),
-                    ),
-                    ElevatedButton(
-  onPressed: orderItems.isEmpty
-      ? null
-      : () {
-          if (selectedOrderId != null) {
-            updateOrder(selectedOrderId!); // Call the update function
-          }
-        },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: orderItems.isEmpty ? Colors.grey : Colors.teal,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8.0),
-    ),
-  ),
-  child: const Text(
-    'Update',
-    style: TextStyle(fontSize: 16.0),
-  ),
-),
-
-                  ],
-                ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedOrderId != null) {
+                  updateOrder(selectedOrderId!);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please select an order to update.')),
+                  );
+                }
+              },
+              child: const Text('Update Order'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-            ],
+            ),
           ],
         ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(12.0),
+        color: Colors.teal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total Quantity: ${calculateTotalQuantity()}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            Text(
+              'Total Amount: ₹${calculateTotalAmount().toStringAsFixed(2)}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: selectedOrderId == null 
+          ? null 
+          : () async {
+              final newProducts = await showModalBottomSheet<List<Map<String, dynamic>>>( 
+                context: context,
+                builder: (context) {
+                  return Bottomsheet(
+                    onAddProduct: (newProduct) {
+                      _updateProductList(newProduct);
+                    },
+                  );
+                },
+              );
+
+              if (newProducts != null) {
+                _updateProductList(newProducts);
+              }
+            },
+        child:  Icon(Icons.add),
+        backgroundColor: selectedOrderId == null ? Colors.grey : Colors.teal,
       ),
     );
   }
