@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -94,6 +94,13 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  // Function to save user data to SharedPreferences
+  void _saveUserData(String userName, String profilePicUrl) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', userName);
+    await prefs.setString('profilePicPath', profilePicUrl);
+  }
+
   // Sign-Up Function
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
@@ -131,7 +138,10 @@ class _SignUpPageState extends State<SignUpPage> {
             'isVerified': false, // Track verification status
           });
 
-          // Step 5: Inform user and navigate
+          // Step 5: Save user data to SharedPreferences
+          _saveUserData(_nameController.text.trim(), profileImageUrl ?? '');
+
+          // Step 6: Inform user and navigate
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sign-Up Successful! Verify your email before logging in.')),
           );
