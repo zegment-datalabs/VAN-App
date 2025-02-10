@@ -3,8 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart'; // Import the HomePage
 import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
-import 'package:van_app_demo/category/order_page.dart';
+import 'package:van_app_demo/myorders_page.dart';
 import 'package:van_app_demo/category/allproducts.dart';
+import 'package:van_app_demo/login_page.dart';
+import 'package:van_app_demo/myaccount.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/cupertino.dart';
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -20,6 +24,13 @@ class _ProductsPageState extends State<ProductsPage> {
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> filteredProducts = [];
   bool isLoading = true;
+  bool isLoadingMore = false;
+  String _name = "User";
+   String _profilePicUrl = "";
+
+  // Pagination variables
+  int currentPage = 1;
+  final int itemsPerPage = 8;
 
   // Search functionality
   TextEditingController searchController = TextEditingController();
@@ -27,6 +38,17 @@ class _ProductsPageState extends State<ProductsPage> {
 
   // ScrollController for smooth scrolling
   final ScrollController _scrollController = ScrollController();
+
+  // Bottom Navigation Index
+  int _selectedIndex = 0;
+
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name = prefs.getString('name') ?? 'User';
+       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+    });
+  }
 
   Future<void> _loadProducts() async {
     setState(() {
@@ -88,14 +110,41 @@ class _ProductsPageState extends State<ProductsPage> {
     }
   }
 
+
+  // Function to load more products
+  void _loadMore() {
+    setState(() {
+      currentPage++;
+    });
+
+    // Simulate a delay for loading more data (e.g., fetching from Firestore)
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        isLoadingMore = false; // Stop loading spinner once new data is loaded
+      });
+    });
+  }
+
+  // Scroll listener to trigger loading more items when reaching the bottom
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      if (!isLoadingMore) {
+        setState(() {
+          isLoadingMore = true;
+        });
+        _loadMore();
+      }
+    }
+  }
+
+
   // Function to programmatically scroll
   void _scrollToPosition(double offset,
       {Duration? duration, Curve curve = Curves.easeInOut}) {
     _scrollController.animateTo(
       offset,
-      duration: duration ??
-          const Duration(
-              milliseconds: 200), // Adjust duration for speed control
+      duration: duration ?? const Duration(milliseconds: 50), // Adjust duration for speed control
       curve: curve,
     );
   }
@@ -110,14 +159,17 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 
   Future<void> _addToGlobalCart() async {
+    bool hasItemsToAdd = false;
+
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
       final sellingPrice =
-          double.tryParse(product['selling_price']?.toString() ?? '0.00') ??
-              0.0;
+          double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       if (quantity > 0) {
+        hasItemsToAdd = true; // There's at least one item to add
+
         final existingIndex =
             Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
 
@@ -134,12 +186,21 @@ class _ProductsPageState extends State<ProductsPage> {
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Products added to cart!'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    if (hasItemsToAdd) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Products added to cart!'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add items to the cart before proceeding.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   // Calculate the total amount based on the filtered products and quantities
@@ -158,14 +219,75 @@ class _ProductsPageState extends State<ProductsPage> {
     return total;
   }
 
+void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CartPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AllProductsPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyAccountPage()),
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  // // Function to paginate
+  // void _nextPage() {
+  //   if ((currentPage * itemsPerPage) < filteredProducts.length) {
+  //     setState(() {
+  //       currentPage++;
+  //     });
+  //   }
+  // }
+
+  // void _previousPage() {
+  //   if (currentPage > 1) {
+  //     setState(() {
+  //       currentPage--;
+  //     });
+  //   }
+  // }
+
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _loadUserData();
+    _scrollController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_scrollListener);
     searchController.dispose();
     searchFocusNode.dispose();
     _scrollController.dispose(); // Dispose the scroll controller
@@ -174,28 +296,39 @@ class _ProductsPageState extends State<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Paginate the filtered products
+    List<Map<String, dynamic>> currentPageProducts = filteredProducts
+        .skip((currentPage - 1) * itemsPerPage)
+        .take(itemsPerPage)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.categoryTitle),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
         actions: [
-          // Cart Button
           IconButton(
-            icon: const Icon(Icons.shopping_cart),
+            icon: const Icon(Icons.home, color: Colors.black),
             onPressed: () {
-              _resetQuantities();
-              Navigator.push(
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.shopping_cart, color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const CartPage()),
               );
             },
           ),
-
-          // Hamburger Menu (on the right side)
           Builder(
             builder: (context) {
               return IconButton(
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu, color: Colors.black),
                 onPressed: () {
                   Scaffold.of(context).openEndDrawer();
                 },
@@ -204,26 +337,28 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ],
       ),
-      endDrawer: Drawer(
+    endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.teal,
-              ),
+            DrawerHeader(
+              decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
+                children: [
                   CircleAvatar(
-                    radius: 30.0,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
-                  ),
-                  SizedBox(height: 10.0),
+                  radius: 50,
+                  backgroundImage: _profilePicUrl.isNotEmpty
+                      ? NetworkImage(_profilePicUrl)
+                      : null, // No image if URL is empty
+                  child: _profilePicUrl.isEmpty
+                      ? Icon(Icons.person, size: 30, color: Colors.white) // Placeholder icon
+                      : null, // No icon if URL is available
+                  backgroundColor: Colors.grey.shade400, // Background color for the icon
+                ),
+                  const SizedBox(height: 10.0),
                   Text(
-                    'User Name',
-                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 15.0),
                   ),
                 ],
               ),
@@ -231,66 +366,41 @@ class _ProductsPageState extends State<ProductsPage> {
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Home'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text('Cart'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
+              onTap: () => _onItemTapped(0),
             ),
             ListTile(
               leading: const Icon(Icons.category),
               title: const Text('Categories'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CategoryPage()),
-                );
-              },
+              onTap: () => _onItemTapped(1),
             ),
             ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('All products'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AllProductsPage()),
-                );
-              },
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Cart'),
+              onTap: () => _onItemTapped(2),
+            ),
+            ListTile(
+              leading: const Icon(Icons.view_list),
+              title: const Text('All Products'),
+              onTap: () => _onItemTapped(3),
             ),
             ListTile(
               leading: const Icon(Icons.assignment),
-              title: const Text('Orders'),
+              title: const Text('My Orders'),
               onTap: () {
-                double orderValue = calculateTotalAmount();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => OrderPage(
-                      orderValue: orderValue,
-                      quantity: orderValue,
-                      selectedProducts: Cart.selectedProducts,
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => MyOrdersPage()),
                 );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
+              leading: const Icon(Icons.exit_to_app),
               title: const Text('Logout'),
               onTap: () {
-                // Handle Logout action
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
               },
             ),
           ],
@@ -318,15 +428,32 @@ class _ProductsPageState extends State<ProductsPage> {
                     padding: const EdgeInsets.all(8.0),
                     child: ListView.builder(
                       controller: _scrollController,
-                      itemCount: filteredProducts.length,
+                      itemCount:
+                          currentPageProducts.length + (isLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
+                        if (index == currentPageProducts.length) {
+                          return const Center(
+                            child: CupertinoActivityIndicator(),
+                          );
+                        }
+                      final product = currentPageProducts[index];
+                        final productImageUrl =
+                            product['product_url']; // Image URL from Firestore
                         final productName = product['title'] ?? 'Unknown';
                         final sellingPrice =
                             product['selling_price']?.toString() ?? '0.00';
                         final quantity = int.tryParse(
-                                controllers[productName]?.text ?? '0') ??
-                            0;
+                                controllers[productName]?.text ?? '0') ?? 0;
+                      // itemCount: currentPageProducts.length,
+                      // itemBuilder: (context, index) {
+                      //   final product = currentPageProducts[index];
+                      //   final productImageUrl =
+                      //       product['product_url']; // Image URL from Firestore
+                      //   final productName = product['title'] ?? 'Unknown';
+                      //   final sellingPrice =
+                      //       product['selling_price']?.toString() ?? '0.00';
+                      //   final quantity = int.tryParse(
+                      //           controllers[productName]?.text ?? '0') ?? 0;
 
                         return Column(
                           children: [
@@ -335,6 +462,24 @@ class _ProductsPageState extends State<ProductsPage> {
                                   const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
+                                  // Product Image
+                                  Expanded(
+                                    flex: 1,
+                                    child: productImageUrl != null &&
+                                            productImageUrl.isNotEmpty
+                                        ? Image.network(
+                                            productImageUrl,
+                                            height: 50.0,
+                                            width:
+                                                70.0, // Adjust height of the image
+                                            fit: BoxFit
+                                                .cover, // Adjust image fit
+                                          )
+                                        : const Icon(Icons.image,
+                                            size:
+                                                70.0), // Placeholder if no image URL
+                                  ),
+                                  // Product Name and Price
                                   Expanded(
                                     flex: 3,
                                     child: Column(
@@ -349,7 +494,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                           ),
                                         ),
                                         Text(
-                                          '\$ $sellingPrice',
+                                          '₹ $sellingPrice',
                                           style: const TextStyle(
                                             fontSize: 14.0,
                                             fontWeight: FontWeight.bold,
@@ -359,6 +504,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                       ],
                                     ),
                                   ),
+                                  // Quantity Controls
                                   Expanded(
                                     flex: 2,
                                     child: Row(
@@ -371,15 +517,9 @@ class _ProductsPageState extends State<ProductsPage> {
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                                  productName]
-                                                              ?.text ??
-                                                          '0') ??
-                                                      0;
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
                                               if (currentQuantity > 0) {
-                                                controllers[productName]?.text =
-                                                    (currentQuantity - 1)
-                                                        .toString();
+                                                controllers[productName]?.text = (currentQuantity - 1).toString();
                                               }
                                             });
                                           },
@@ -390,20 +530,15 @@ class _ProductsPageState extends State<ProductsPage> {
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                                  productName]
-                                                              ?.text ??
-                                                          '0') ??
-                                                      0;
-                                              controllers[productName]?.text =
-                                                  (currentQuantity + 1)
-                                                      .toString();
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              controllers[productName]?.text = (currentQuantity + 1).toString();
                                             });
                                           },
                                         ),
                                       ],
                                     ),
                                   ),
+                                  // Quantity Input
                                   Expanded(
                                     flex: 1,
                                     child: Container(
@@ -430,11 +565,25 @@ class _ProductsPageState extends State<ProductsPage> {
                     ),
                   ),
                 ),
+                // // Pagination Controls
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.center,
+                //   children: [
+                //     IconButton(
+                //       icon: const Icon(Icons.arrow_back_ios),
+                //       onPressed: _previousPage,
+                //     ),
+                //     Text('Page $currentPage'),
+                //     IconButton(
+                //       icon: const Icon(Icons.arrow_forward_ios),
+                //       onPressed: _nextPage,
+                //     ),
+                //   ],
+                // ),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     padding: const EdgeInsets.all(10.0),
-                    color: Colors.teal[100],
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -449,7 +598,8 @@ class _ProductsPageState extends State<ProductsPage> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green),
+                              backgroundColor:
+                                  const Color.fromARGB(255, 212, 134, 17)),
                           child: const Text('Buy Now'),
                         ),
                         ElevatedButton(
@@ -464,6 +614,51 @@ class _ProductsPageState extends State<ProductsPage> {
                 ),
               ],
             ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+          ),
+          boxShadow: [
+            BoxShadow(color: Color.fromARGB(31, 24, 211, 55), blurRadius: 5.0)
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: const Color.fromARGB(255, 12, 14, 13),
+          unselectedItemColor: const Color.fromARGB(255, 7, 7, 7),
+          type: BottomNavigationBarType.fixed,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.category),
+              label: 'Category',
+            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.assignment),
+            //   label: 'Orders',
+            // ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart),
+              label: 'Cart',
+            ),
+            BottomNavigationBarItem(
+              // All Products Item
+              icon: Icon(Icons.view_list),
+              label: 'All Products',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'My Account',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

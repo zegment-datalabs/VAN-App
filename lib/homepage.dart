@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'login_page.dart';
-import 'category/allproducts.dart';
+import 'package:van_app_demo/login_page.dart';
 import 'package:van_app_demo/updationpage.dart';
-
+import 'package:van_app_demo/category/categorypage.dart';
+import 'package:van_app_demo/cart_page.dart';
+import 'package:van_app_demo/category/allproducts.dart';
+import 'package:van_app_demo/myaccount.dart';
+import 'package:van_app_demo/myorders_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,10 +18,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? userEmail;
-  String? profilePicPath;
+ String _profilePicUrl = "";
   String? userName;
 
   final FirebaseFirestore db = FirebaseFirestore.instance;
+
+    int _selectedIndex = 0;
   
   @override
   void initState() {
@@ -30,10 +35,63 @@ class _HomePageState extends State<HomePage> {
   void _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      userEmail = prefs.getString('emailPhone') ?? 'Guest';
-      profilePicPath = prefs.getString('profilePicPath') ?? 'https://via.placeholder.com/150';
-      userName = prefs.getString('userName') ?? 'Guest';
+      userEmail = prefs.getString('emailOrPhone') ?? 'Guest';
+       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+   userName = prefs.getString('name') ?? 'Guest';
     });
+
+
+   print("✅ Loaded Username: userName");
+    print("✅ Loaded Profile Pic URL: $_profilePicUrl");
+  }
+
+  
+   void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        );
+        break;
+      // case 2:
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (context) =>  OrderPage(orderValue: 0, quantity: 0, selectedProducts: [])),
+      //   );
+      //   break;
+     case 2:
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const CartPage()),
+  );
+  break;
+   case 3:  // For All Products page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AllProductsPage()),
+        );
+        break;
+  case 4:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  MyAccountPage()),
+        );
+        break;
+
+      default:
+        break;
+    }
   }
 
   // Function to logout
@@ -46,6 +104,8 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
+  
+
 
   // Function to add category data to Firestore
   void _addCategoryData() async {
@@ -53,24 +113,24 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final categories = [
-        {"title": "Electronics", "icon": "electrical_services"},
-        {"title": "Clothing", "icon": "shopping_bag"},
-        {"title": "Books", "icon": "book"},
-        {"title": "Shoes", "icon": "run_circle"},
-        {"title": "Groceries", "icon": "local_grocery_store"},
-        {'title': 'Toys', 'icon': "toys"},
-        {'title': 'Beauty Products', 'icon': "brush"},
-        {'title': 'Sports', 'icon': "sports"},
-        {'title': 'Health', 'icon': "health_and_safety"},
-        {'title': 'Home Appliances', 'icon': "kitchen"},
-        {'title': 'Gaming', 'icon': "videogame_asset"},
-        {'title': 'Food & Drink', 'icon': "fastfood"},
-        {'title': 'Books & Magazines', 'icon': "bookmark"},
-        {'title': 'Stationery', 'icon': "create"},
-        {'title': 'Crafts', 'icon': "palette"},
-        {'title': 'Outdoor & Adventure', 'icon': "outdoor_grill"},
-        {'title': 'Watches', 'icon': "watch"},
-        {'title': 'Gifts', 'icon': "card_giftcard"},
+        {"title": "Electronics", "icon": ""},
+        {"title": "Clothing", "icon": ""},
+        {"title": "Books", "icon": ""},
+        {"title": "Shoes", "icon": ""},
+        {"title": "Groceries", "icon": ""},
+        {'title': 'Toys', 'icon': ""},
+        {'title': 'Beauty Products', 'icon': ""},
+        {'title': 'Sports', 'icon': ""},
+        {'title': 'Health', 'icon': ""},
+        {'title': 'Appliances', 'icon': ""},
+        {'title': 'Gaming', 'icon': ""},
+        {'title': 'Food & Drink', 'icon': ""},
+        {'title': 'Magazines', 'icon': ""},
+        {'title': 'Stationery', 'icon': ""},
+        {'title': 'Crafts', 'icon': ""},
+        {'title': 'Adventure', 'icon': ""},
+        {'title': 'Watches', 'icon': ""},
+        {'title': 'Gifts', 'icon': ""},
       ];
 
       for (var category in categories) {
@@ -96,7 +156,7 @@ class _HomePageState extends State<HomePage> {
       final products = [
         {
           "product_id": "PRD0001",
-          "product_url": "URL",
+          "product_url": "https://www.elgiganten.se/_next/image?url=https%3A%2F%2Fmedia.elkjop.com%2Fassets%2Fimage%2Fdv_web_D18000128914205&w=1200&q=75",
           "title": "Smartphone",
           "purchase_price": 699.99,
           "selling_price": 699.99,
@@ -109,7 +169,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0002",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/R.a243c72be94e93f1399f3399b06c7677?rik=hrhQ9%2b%2fJ1SSPHA&riu=http%3a%2f%2fwww.riskmanagementmonitor.com%2fwp-content%2fuploads%2f2014%2f12%2fLaptop1.jpg&ehk=OfidPRNnM1a1JERcjUs9J725LwV1tT7YdUTEmeAi5Gw%3d&risl=1&pid=ImgRaw&r=0",
           "title": "Laptop",
           "purchase_price": 999.99,
           "selling_price": 699.99,
@@ -122,8 +182,8 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0003",
-          "product_url": "URL",
-          "title": "Smart Watch",
+          "product_url": "https://i5.walmartimages.com/asr/e1ae90b2-98da-443b-888c-a71228c5234e.eb10d07052b374f38aa17166043f5a7a.jpeg?odnWidth=1000&odnHeight=1000&odnBg=ffffff",
+          "title": "Smart Watches",
           "purchase_price": 199.99,
           "selling_price": 699.99,
           "qty": 10,
@@ -135,7 +195,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0004",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/R.b673d22704e1991f3aadecb0bd0144d1?rik=%2b44lBrgHsZ3bOQ&riu=http%3a%2f%2fpngimg.com%2fuploads%2ftablet%2ftablet_PNG8567.png&ehk=BdoUGf9HoFY42ZMRwrt9pj4hX%2f%2fBBwOhEPgJtN541tA%3d&risl=&pid=ImgRaw&r=0",
           "title": "Tablet",
           "purchase_price": 399.99,
           "selling_price": 699.99,
@@ -149,7 +209,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0005",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/OIP.VX1qaQUtfLP73Mg3C3GkhgHaHa?rs=1&pid=ImgDetMain",
           "title": "T-Shirt",
           "purchase_price": 19.99,
           "selling_price": 699.99,
@@ -162,7 +222,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0006",
-          "product_url": "URL",
+          "product_url": "https://img.freepik.com/premium-psd/isolated-folded-blue-jeans_34683-2556.jpg",
           "title": "Jeans",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -175,7 +235,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0007",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/OIP.1MGjBAGlFG1-xYmaeEwFswHaJ3?w=186&h=248&c=7&r=0&o=5&pid=1.7",
           "title": "Jacket",
           "purchase_price": 59.99,
           "selling_price": 699.99,
@@ -188,7 +248,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0008",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/OIP.bO4pS4CxtlOHb0LsEMiIWwHaIf?w=186&h=213&c=7&r=0&o=5&pid=1.7",
           "title": "Sweater",
           "purchase_price": 39.99,
           "selling_price": 699.99,
@@ -201,7 +261,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0009",
-          "product_url": "URL",
+          "product_url": "https://th.bing.com/th/id/OIP.fFaX7nKq5_5gf2nSI3QEUgHaLK?w=186&h=280&c=7&r=0&o=5&pid=1.7",
           "title": "The Great Gatsby",
           "purchase_price": 9.99,
           "selling_price": 699.99,
@@ -214,7 +274,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0010",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "1984",
           "purchase_price": 14.99,
           "selling_price": 699.99,
@@ -227,7 +287,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0011",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "War and Peace",
           "purchase_price": 12.99,
           "selling_price": 699.99,
@@ -240,7 +300,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0012",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "The Catcher in the Rye",
           "purchase_price": 10.99,
           "selling_price": 699.99,
@@ -253,7 +313,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0013",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Running Shoes",
           "purchase_price": 79.99,
           "selling_price": 699.99,
@@ -266,7 +326,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0014",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Casual Sneakers",
           "purchase_price": 59.99,
           "selling_price": 699.99,
@@ -279,7 +339,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0015",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Leather Boots",
           "purchase_price": 129.99,
           "selling_price": 699.99,
@@ -292,7 +352,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0016",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Sandals",
           "purchase_price": 39.99,
           "selling_price": 699.99,
@@ -305,7 +365,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0017",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Organic Apples",
           "purchase_price": 3.99,
           "selling_price": 699.99,
@@ -318,7 +378,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0018",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Milk",
           "purchase_price": 1.49,
           "selling_price": 699.99,
@@ -331,7 +391,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0019",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Bananas",
           "purchase_price": 2.99,
           "selling_price": 699.99,
@@ -344,7 +404,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0020",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Eggs",
           "purchase_price": 3.49,
           "selling_price": 699.99,
@@ -357,7 +417,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0021",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Lego Set",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -370,7 +430,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0022",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Doll House",
           "purchase_price": 79.99,
           "selling_price": 699.99,
@@ -383,7 +443,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0023",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "RC Car",
           "purchase_price": 59.99,
           "selling_price": 699.99,
@@ -396,7 +456,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0024",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Action Figure",
           "purchase_price": 29.99,
           "selling_price": 699.99,
@@ -409,7 +469,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0025",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Lipstick",
           "purchase_price": 15.99,
           "selling_price": 699.99,
@@ -422,7 +482,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0026",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Face Cream",
           "purchase_price": 29.99,
           "selling_price": 699.99,
@@ -435,7 +495,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0027",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Face Serum",
           "purchase_price": 19.99,
           "selling_price": 699.99,
@@ -448,7 +508,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0028",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Shampoo",
           "purchase_price": 9.99,
           "selling_price": 699.99,
@@ -461,7 +521,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0029",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Basketball",
           "purchase_price": 24.99,
           "selling_price": 699.99,
@@ -474,7 +534,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0030",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Soccer Ball",
           "purchase_price": 19.99,
           "selling_price": 699.99,
@@ -487,7 +547,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0031",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Baseball Glove",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -500,7 +560,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0032",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Tennis Racket",
           "purchase_price": 69.99,
           "selling_price": 699.99,
@@ -513,7 +573,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0033",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Herbal Tea",
           "purchase_price": 7.99,
           "selling_price": 699.99,
@@ -526,7 +586,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0034",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Protein Powder",
           "purchase_price": 29.99,
           "selling_price": 699.99,
@@ -539,7 +599,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0035",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Vitamins",
           "purchase_price": 19.99,
           "selling_price": 699.99,
@@ -552,7 +612,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0036",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Yoga Mat",
           "purchase_price": 25.99,
           "selling_price": 699.99,
@@ -565,7 +625,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0037",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Blender",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -574,11 +634,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A high-powered blender for smoothies and more.",
-          "category": "Home Appliances"
+          "category": "Appliances"
         },
         {
           "product_id": "PRD0038",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Vacuum Cleaner",
           "purchase_price": 99.99,
           "selling_price": 699.99,
@@ -587,11 +647,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A powerful vacuum cleaner for your home.",
-          "category": "Home Appliances"
+          "category": "Appliances"
         },
         {
           "product_id": "PRD0039",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Coffee Maker",
           "purchase_price": 79.99,
           "selling_price": 699.99,
@@ -600,11 +660,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A stylish coffee maker for home brewing.",
-          "category": "Home Appliances"
+          "category": "Appliances"
         },
         {
           "product_id": "PRD0040",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Air Fryer",
           "purchase_price": 99.99,
           "selling_price": 699.99,
@@ -613,11 +673,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A modern air fryer for healthy cooking.",
-          "category": "Home Appliances"
+          "category": "Appliances"
         },
         {
           "product_id": "PRD0041",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "PlayStation 5",
           "purchase_price": 499.99,
           "selling_price": 699.99,
@@ -630,7 +690,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0042",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Gaming Mouse",
           "purchase_price": 39.99,
           "selling_price": 699.99,
@@ -643,7 +703,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0043",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Xbox Series X",
           "purchase_price": 499.99,
           "selling_price": 699.99,
@@ -656,7 +716,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0044",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Gaming Headset",
           "purchase_price": 69.99,
           "selling_price": 699.99,
@@ -669,7 +729,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0045",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Pizza",
           "purchase_price": 12.99,
           "selling_price": 699.99,
@@ -683,7 +743,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0046",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Soft Drink",
           "purchase_price": 1.99,
           "selling_price": 699.99,
@@ -696,7 +756,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0047",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Pasta",
           "purchase_price": 4.99,
           "selling_price": 699.99,
@@ -709,7 +769,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0048",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Juice",
           "purchase_price": 2.99,
           "selling_price": 699.99,
@@ -722,7 +782,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0049",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "National Geographic",
           "purchase_price": 5.99,
           "selling_price": 699.99,
@@ -731,11 +791,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A popular magazine on nature and science.",
-          "category": "Books & Magazines"
+          "category": "Magazines"
         },
         {
           "product_id": "PRD0050",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Time Magazine",
           "purchase_price": 4.99,
           "selling_price": 699.99,
@@ -744,11 +804,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A leading news magazine covering global events.",
-          "category": "Books & Magazines"
+          "category": "Magazines"
         },
         {
           "product_id": "PRD0051",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Scientific American",
           "purchase_price": 6.99,
           "selling_price": 699.99,
@@ -757,11 +817,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A magazine focused on scientific discovery.",
-          "category": "Books & Magazines"
+          "category": "Magazines"
         },
         {
           "product_id": "PRD0052",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "The Economist",
           "purchase_price": 7.99,
           "selling_price": 699.99,
@@ -770,11 +830,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A weekly magazine that covers global issues.",
-          "category": "Books & Magazines"
+          "category": "Magazines"
         },
         {
           "product_id": "PRD0053",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Notebook",
           "purchase_price": 3.99,
           "selling_price": 699.99,
@@ -787,7 +847,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0054",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Pens",
           "purchase_price": 2.49,
           "selling_price": 699.99,
@@ -800,7 +860,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0055",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Eraser",
           "purchase_price": 1.99,
           "selling_price": 699.99,
@@ -813,7 +873,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0056",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Ruler",
           "purchase_price": 2.49,
           "selling_price": 699.99,
@@ -826,7 +886,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0057",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Painting Kit",
           "purchase_price": 19.99,
           "selling_price": 699.99,
@@ -839,7 +899,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0058",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Knitting Set",
           "purchase_price": 14.99,
           "selling_price": 699.99,
@@ -852,7 +912,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0059",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Sculpting Clay",
           "purchase_price": 14.99,
           "selling_price": 699.99,
@@ -865,7 +925,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0060",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Origami Paper",
           "purchase_price": 6.99,
           "selling_price": 699.99,
@@ -878,7 +938,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0061",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Camping Tent",
           "purchase_price": 99.99,
           "selling_price": 699.99,
@@ -887,11 +947,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A durable tent for your next camping trip.",
-          "category": "Outdoor & Adventure"
+          "category": "Adventure"
         },
         {
           "product_id": "PRD0062",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Backpack",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -900,11 +960,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A spacious and comfortable backpack for hiking.",
-          "category": "Outdoor & Adventure"
+          "category": "Adventure"
         },
         {
           "product_id": "PRD0063",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Sleeping Bag",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -913,11 +973,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "A comfortable sleeping bag for camping trips.",
-          "category": "Outdoor & Adventure"
+          "category": "Adventure"
         },
         {
           "product_id": "PRD0064",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Hiking Boots",
           "purchase_price": 89.99,
           "selling_price": 699.99,
@@ -926,11 +986,11 @@ class _HomePageState extends State<HomePage> {
           "reorder_level": 3,
           "location": "Warehouse",
           "comments": "Durable hiking boots for all terrains.",
-          "category": "Outdoor & Adventure"
+          "category": "Adventure"
         },
         {
           "product_id": "PRD0065",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Analog Watch",
           "purchase_price": 79.99,
           "selling_price": 699.99,
@@ -943,7 +1003,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0066",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Smart Watch",
           "purchase_price": 149.99,
           "selling_price": 699.99,
@@ -956,7 +1016,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0067",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Luxury Watch",
           "purchase_price": 799.99,
           "selling_price": 699.99,
@@ -969,7 +1029,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0068",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Digital Watch",
           "purchase_price": 49.99,
           "selling_price": 699.99,
@@ -982,7 +1042,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0069",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Gift Card",
           "purchase_price": 25.00,
           "selling_price": 699.99,
@@ -995,7 +1055,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0070",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Gift Basket",
           "purchase_price": 59.99,
           "selling_price": 699.99,
@@ -1009,7 +1069,7 @@ class _HomePageState extends State<HomePage> {
         
         {
           "product_id": "PRD0071",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Luxury Perfume",
           "purchase_price": 50.00,
           "selling_price": 199.99,
@@ -1022,7 +1082,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0072",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Personalized Mug",
           "purchase_price": 10.00,
           "selling_price": 29.99,
@@ -1035,7 +1095,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0073",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Candles Set",
           "purchase_price": 25.00,
           "selling_price": 59.99,
@@ -1048,7 +1108,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0074",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Chocolate Box",
           "purchase_price": 15.00,
           "selling_price": 49.99,
@@ -1061,7 +1121,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0075",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Fleece Blanket",
           "purchase_price": 18.00,
           "selling_price": 39.99,
@@ -1074,7 +1134,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0076",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Spa Set",
           "purchase_price": 35.00,
           "selling_price": 79.99,
@@ -1087,7 +1147,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0077",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Wine Glass Set",
           "purchase_price": 20.00,
           "selling_price": 49.99,
@@ -1100,7 +1160,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0078",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Photo Frame",
           "purchase_price": 12.00,
           "selling_price": 24.99,
@@ -1113,7 +1173,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0079",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Jewelry Box",
           "purchase_price": 30.00,
           "selling_price": 69.99,
@@ -1126,7 +1186,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0080",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Tea Set",
           "purchase_price": 40.00,
           "selling_price": 99.99,
@@ -1139,7 +1199,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0081",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Travel Set",
           "purchase_price": 15.00,
           "selling_price": 39.99,
@@ -1152,7 +1212,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0082",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Portable Speaker",
           "purchase_price": 35.00,
           "selling_price": 89.99,
@@ -1165,7 +1225,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0083",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Smartwatch",
           "purchase_price": 100.00,
           "selling_price": 249.99,
@@ -1178,7 +1238,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0084",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Luxury Wallet",
           "purchase_price": 70.00,
           "selling_price": 149.99,
@@ -1191,7 +1251,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0085",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Custom Jewelry",
           "purchase_price": 50.00,
           "selling_price": 129.99,
@@ -1204,7 +1264,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0086",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Bluetooth Earbuds",
           "purchase_price": 25.00,
           "selling_price": 59.99,
@@ -1217,7 +1277,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0087",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Cozy Slippers",
           "purchase_price": 18.00,
           "selling_price": 39.99,
@@ -1230,7 +1290,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0088",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Wine Cooler",
           "purchase_price": 40.00,
           "selling_price": 89.99,
@@ -1243,7 +1303,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0089",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Outdoor Picnic Set",
           "purchase_price": 60.00,
           "selling_price": 149.99,
@@ -1256,7 +1316,7 @@ class _HomePageState extends State<HomePage> {
         },
         {
           "product_id": "PRD0090",
-          "product_url": "URL",
+          "product_url": "https://firebasestorage.googleapis.com/v0/b/zegmentdata.appspot.com/o/products%2FScreenshot%202023-06-30%20213751.png?alt=media&token=cd3c6956-c557-4088-908a-819e8245685a",
           "title": "Leather Journal",
           "purchase_price": 25.00,
           "selling_price": 59.99,
@@ -1268,29 +1328,15 @@ class _HomePageState extends State<HomePage> {
           "category": "Gifts"
         }
       ];
+      
 
-      // Check for each product if it already exists in the database by its title
       for (var product in products) {
-        final existingProductQuery = await productCollection
-            .where('title', isEqualTo: product['title'])
-            .get();
+        await productCollection.doc(product['title'] as String).set(product);
 
-        if (existingProductQuery.docs.isEmpty) {
-          // If no existing product is found, add the product to the Firestore collection
-          await productCollection.add(product);
-        } else {
-          // If the product exists, you can update it (e.g., updating price or description)
-          var existingProduct = existingProductQuery.docs.first;
-          await productCollection.doc(existingProduct.id).update({
-            'price': product['price'],
-            'description': product['description'],
-          });
-        }
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Product data successfully added or updated!')),
+        const SnackBar(content: Text('product data successfully added!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1298,6 +1344,39 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
+
+
+  //  // Check for each product if it already exists in the database by its title
+  //     for (var product in products) {
+  //       final existingProductQuery = await productCollection
+  //           .where('title', isEqualTo: product['title'])
+  //           .get();
+
+  //       if (existingProductQuery.docs.isEmpty) {
+  //         // If no existing product is found, add the product to the Firestore collection
+  //         await productCollection.add(product);
+  //       } else {
+  //         // If the product exists, you can update it (e.g., updating price or description)
+  //         var existingProduct = existingProductQuery.docs.first;
+  //         await productCollection.doc(existingProduct.id).update({
+  //           'price': product['price'],
+  //           'description': product['description'],
+  //         });
+  //       }
+  //     }
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //           content: Text('Product data successfully added or updated!')),
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error adding product data: $e')),
+  //     );
+  //   }
+  // }
+
+
+
 
   // Function to load categories from Firestore
   void _loadCategories() async {
@@ -1314,7 +1393,7 @@ class _HomePageState extends State<HomePage> {
         // Safely cast the icon to String and map it
         if (iconString is String) {
           final icon =
-              _getIconFromString(iconString); // Map string to actual Icon
+              getCategoryIcon(iconString); // Map string to actual Icon
           print('Category: $title, Icon: $icon');
         }
       }
@@ -1324,130 +1403,125 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Helper function to map string icon names to actual Icons
-  Icon _getIconFromString(String iconString) {
-    switch (iconString) {
-      case 'electrical_services':
-        return const Icon(Icons.electrical_services);
-      case 'shopping_bag':
-        return const Icon(Icons.shopping_bag);
-      case 'book':
-        return const Icon(Icons.book);
-      case 'run_circle':
-        return const Icon(Icons.run_circle);
-      case 'local_grocery_store':
-        return const Icon(Icons.local_grocery_store);
-      default:
-        return const Icon(Icons.help); // Default icon
+IconData getCategoryIcon(String iconName) {
+  switch (iconName) {
+    case 'shopping_cart':
+      return Icons.shopping_cart;
+    case 'restaurant':
+      return Icons.restaurant;
+    case 'sports':
+      return Icons.sports;
+    case 'local_florist':
+      return Icons.local_florist;
+    case 'electronics':
+      return Icons.devices;
+    default:
+      return Icons.category;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Home'),
-      ),
-      body: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      appBar: AppBar(title: const Text('Home')),
+      body: Column(
         children: [
-          // Display Profile Picture if URL is valid
-          if (profilePicPath != null && profilePicPath!.isNotEmpty)
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: NetworkImage(profilePicPath!),
-            )
-          else
-            const CircleAvatar(
-              radius: 50,
-              backgroundImage: NetworkImage('https://via.placeholder.com/150'),
-            ),
-          const SizedBox(height: 10),
-          Text(
-            'Welcome, $userEmail',
-            style: const TextStyle(fontSize: 24),
-          ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addCategoryData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                minimumSize: const Size(200, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                  CircleAvatar(
+                  radius: 50,
+                  backgroundImage: _profilePicUrl.isNotEmpty
+                      ? NetworkImage(_profilePicUrl)
+                      : null, // No image if URL is empty
+                  child: _profilePicUrl.isEmpty
+                      ? Icon(Icons.person, size: 50, color: Colors.white) // Placeholder icon
+                      : null, // No icon if URL is available
+                  backgroundColor: Colors.grey.shade400, // Background color for the icon
                 ),
-              ),
-              child: const Text(
-                'Add Category Data',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addProductData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.greenAccent,
-                minimumSize: const Size(200, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Add Product Data',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _logout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                minimumSize: const Size(150, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-            ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AllProductsPage()),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.orangeAccent,
-    minimumSize: const Size(200, 50),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  ),
-  child: const Text(
-    'View All Products',
-    style: TextStyle(fontSize: 18, color: Colors.white),
-  ),
-),
-const SizedBox(height: 20),
-                      ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  UpdationPage()), 
-                        );
-                      },
-                      child: const Text('Update'),
-                    ),
 
+            const SizedBox(height: 10),
+                Text("Welcome, ${userName ?? 'loading'}!", style: const TextStyle(fontSize: 24)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(16),
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              children: [
+                // _buildGridButton(Icons.category, "Add Category", Colors.blue, _addCategoryData),
+
+                // _buildGridButton(Icons.add_shopping_cart, "Add Product", Colors.green, _addProductData),
+               
+                _buildGridButton(Icons.update, "Order Management", Colors.orange, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UpdationPage()),
+                  );
+                }),
+                _buildGridButton(Icons.view_list, "View All Products", Colors.purple, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AllProductsPage()),
+                  );
+                }),
+               _buildGridButton(Icons.shopping_cart, "My Orders", Colors.blue, () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MyOrdersPage()),
+                      );
+                    }),
+                    _buildGridButton(Icons.logout, "Logout", Colors.red, _logout),
+
+                
+            
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: const Color.fromARGB(255, 0, 0, 0),
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Category'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
+          BottomNavigationBarItem(icon: Icon(Icons.view_list), label: 'All Products'),
+          BottomNavigationBarItem(icon: Icon(Icons.person),label: 'My Account',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridButton(IconData icon, String label, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 40),
+            const SizedBox(height: 10),
+            Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),
     );
   }
 }
+
+
