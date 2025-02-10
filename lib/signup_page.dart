@@ -24,6 +24,8 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   File? _selectedImage;
+  String? _uploadedProfileUrl;
+
   final ImagePicker _picker = ImagePicker();
 
   // Function to pick an image from camera, gallery, or remove the current photo
@@ -39,7 +41,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Pick from Gallery'),
                 onTap: () async {
-                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.gallery);
                   if (pickedFile != null) {
                     setState(() {
                       _selectedImage = File(pickedFile.path);
@@ -52,7 +55,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Take a Photo'),
                 onTap: () async {
-                  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.camera);
                   if (pickedFile != null) {
                     setState(() {
                       _selectedImage = File(pickedFile.path);
@@ -79,96 +83,119 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Function to upload image to Firebase Storage and get URL
-  Future<String?> _uploadImage(String userId) async {
-    if (_selectedImage == null) return null;
+Future<String?> _uploadImage(String userId) async {
+  if (_selectedImage == null) return null;
 
-    try {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('user_profiles/$userId/${DateTime.now().toIso8601String()}');
-      final uploadTask = await storageRef.putFile(_selectedImage!);
-      return await uploadTask.ref.getDownloadURL();
-    } catch (e) {
-      return null;
-    }
+  try {
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('user_profiles/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+    final uploadTask = await storageRef.putFile(_selectedImage!);
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+
+    setState(() {
+      _uploadedProfileUrl = downloadUrl; // 🔥 Store uploaded URL
+    });
+
+    print("✅ Upload successful: $_uploadedProfileUrl");
+    return downloadUrl;
+  } catch (e) {
+    print("❌ Upload failed: $e");
+    return null;
   }
+}
+
+
 
   // Function to save user data to SharedPreferences
-  void _saveUserData(String userName, String profilePicUrl) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userName', userName);
+ void _saveUserData(String userName, String email, String? profilePicUrl) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('userName', userName);  
+  await prefs.setString('emailOrphone', email);
+  
+  if (profilePicUrl != null && profilePicUrl.isNotEmpty) {
     await prefs.setString('profilePicPath', profilePicUrl);
+    print('Profile Pic URL saved successfully: $profilePicUrl');
+  } else {
+    print('No profile picture URL to save.');
   }
+}
 
   // Sign-Up Function
-  void _signUp() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        final inputText = _emailOrPhoneController.text.trim();
+void _signUp() async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      final inputText = _emailOrPhoneController.text.trim();
 
-        // Step 1: Validate email format
-        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter a valid email address.')),
-          );
-          return;
-        }
-
-        // Step 2: Create user in Firebase Auth
-        final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: inputText,
-          password: _passwordController.text.trim(),
-        );
-
-        final User? user = userCredential.user;
-
-        if (user != null) {
-          // Step 3: Send email verification
-          await user.sendEmailVerification();
-
-          // Step 4: Save additional user details to Firestore
-          final userId = user.uid;
-          final profileImageUrl = await _uploadImage(userId);
-
-          await FirebaseFirestore.instance.collection('users').doc(userId).set({
-            'name': _nameController.text.trim(),
-            'emailOrPhone': inputText,
-            'profileImageUrl': profileImageUrl,
-            'isVerified': false, // Track verification status
-          });
-
-          // Step 5: Save user data to SharedPreferences
-          _saveUserData(_nameController.text.trim(), profileImageUrl ?? '');
-
-          // Step 6: Inform user and navigate
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sign-Up Successful! Verify your email before logging in.')),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
-        }
-      } on FirebaseAuthException catch (e) {
-        String errorMessage;
-
-        if (e.code == 'email-already-in-use') {
-          errorMessage = 'This email is already in use.';
-        } else if (e.code == 'weak-password') {
-          errorMessage = 'Password is too weak.';
-        } else if (e.code == 'invalid-email') {
-          errorMessage = 'Invalid email format. Please enter a correct email address.';
-        } else {
-          errorMessage = 'An error occurred. Please try again.';
-        }
-
+      // Step 1: Validate email format OR phone number
+      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText) &&
+          !RegExp(r'^[0-9]{10}$').hasMatch(inputText)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
+          const SnackBar(content: Text('Enter a valid email or phone number.')),
+        );
+        return;
+      }
+
+      // Step 2: Create user in Firebase Auth
+      final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: inputText,
+        password: _passwordController.text.trim(),
+      );
+
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        final userId = user.uid;
+
+        // Step 3: Upload profile image if selected
+
+            String? profileImageUrl = await _uploadImage(userId);
+            print("📸 Debug: profileImageUrl = $profileImageUrl");  // Check if URL is received
+
+
+        // Step 4: Send email verification
+        await user.sendEmailVerification();
+
+        // Step 5: Save user details to Firestore
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'name': _nameController.text.trim(),
+          'emailOrPhone': inputText,
+          'profileImageUrl': profileImageUrl ?? "",
+          'isVerified': false,
+        });
+
+        // **Step 6: Save user details to SharedPreferences**
+        _saveUserData(_nameController.text.trim(), inputText, profileImageUrl);
+
+
+        // Step 7: Inform user and navigate
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-Up Successful! Verify your email before logging in.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
         );
       }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      if (e.code == 'email-already-in-use') {
+        errorMessage = 'This email is already in use.';
+      } else if (e.code == 'weak-password') {
+        errorMessage = 'Password is too weak.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Invalid email format.';
+      } else {
+        errorMessage = 'An error occurred. Please try again.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     }
   }
+}
+
 
   void _navigateToSignIn() {
     Navigator.push(
@@ -181,7 +208,8 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -191,31 +219,35 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   'Create an Account',
                   style: TextStyle(
                     fontSize: 28.0,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal[700],
+                    color: const Color.fromARGB(255, 1, 17, 15),
                   ),
                 ),
                 const SizedBox(height: 20.0),
                 GestureDetector(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _selectedImage != null
-                        ? FileImage(_selectedImage!)
-                        : const AssetImage('assets/default_profile.png') as ImageProvider,
-                    child: _selectedImage == null
-                        ? const Icon(Icons.person, size: 90, color: Colors.white)
-                        : null,
-                  ),
-                ),
+                        onTap: _pickImage,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: _selectedImage != null
+                              ? FileImage(_selectedImage!) // Show selected image before upload
+                              : (_uploadedProfileUrl != null && _uploadedProfileUrl!.isNotEmpty
+                                  ? NetworkImage(_uploadedProfileUrl!) // Show uploaded image from Firebase
+                                  : null),
+                          child: _selectedImage == null && (_uploadedProfileUrl == null || _uploadedProfileUrl!.isEmpty)
+                              ? const Icon(Icons.person, size: 90, color: Colors.white)
+                              : null,
+                        ),
+                      ),
+
+
                 const SizedBox(height: 20.0),
                 _buildTextField(
                   controller: _nameController,
-                  labelText: 'Full Name',
+                  labelText: 'UserName',
                   icon: Icons.person,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -253,7 +285,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   },
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -276,7 +310,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   },
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isConfirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -290,14 +326,14 @@ class _SignUpPageState extends State<SignUpPage> {
                   onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: Colors.teal,
+                    backgroundColor: const Color.fromARGB(255, 185, 92, 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Sign Up',
-                    style: TextStyle(fontSize: 18.0, color: Colors.white),
+                    style: TextStyle(fontSize: 18.0, color: Colors.black),
                   ),
                 ),
                 const SizedBox(height: 10.0),

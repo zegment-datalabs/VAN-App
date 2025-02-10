@@ -3,9 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Bottomsheet extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onAddProduct;
+  final List<Map<String, dynamic>> orderedProducts;
 
-
-  const Bottomsheet({Key? key, required this.onAddProduct}) : super(key: key);
+  const Bottomsheet({
+    Key? key,
+    required this.onAddProduct,
+    required this.orderedProducts,
+  }) : super(key: key);
 
   @override
   BottomsheetState createState() => BottomsheetState();
@@ -15,6 +19,8 @@ class BottomsheetState extends State<Bottomsheet> {
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> filteredProducts = [];
+  List<Map<String, dynamic>> selectedProducts = [];
+  TextEditingController quantityController = TextEditingController();
   bool isLoading = true;
 
   // Search functionality
@@ -24,6 +30,7 @@ class BottomsheetState extends State<Bottomsheet> {
   // ScrollController for smooth scrolling
   final ScrollController _scrollController = ScrollController();
 
+  // Load products from Firestore
   Future<void> _loadProducts() async {
     setState(() {
       isLoading = true;
@@ -52,8 +59,18 @@ class BottomsheetState extends State<Bottomsheet> {
         // Initialize controllers for products
         for (var product in products) {
           final productName = product['title'] ?? 'Unknown';
+
+          // Check if the product is already ordered
+          var orderedProduct = widget.orderedProducts.firstWhere(
+            (ordered) => ordered['Product Name'] == productName,
+            orElse: () => {},
+          );
+
+          int initialQuantity =
+              (orderedProduct.isNotEmpty) ? (orderedProduct['quantity'] ?? 0) : 0;
+
           if (!controllers.containsKey(productName)) {
-            controllers[productName] = TextEditingController(text: '0');
+            controllers[productName] = TextEditingController(text: '$initialQuantity');
           }
         }
       }
@@ -84,35 +101,34 @@ class BottomsheetState extends State<Bottomsheet> {
 
   // Function to update the list of products with modified quantities
   void _updateProductList() {
-  List<Map<String, dynamic>> selectedProducts = [];
+    List<Map<String, dynamic>> selectedProducts = [];
 
-  for (var product in filteredProducts) {
-    final productName = product['title'] ?? 'Unknown';
-    final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+    for (var product in filteredProducts) {
+      final productName = product['title'] ?? 'Unknown';
+      final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
-    if (quantity > 0) {
-      selectedProducts.add({
-        'Product Name': productName,
-        'Category Name': product['category'] ?? 'Unknown',
-        'sellingprice': product['selling_price'] ?? 0.0,
-        'quantity': quantity,
-      });
+      if (quantity > 0) {
+        selectedProducts.add({
+          'Product Name': productName,
+          'Category Name': product['category'] ?? 'Unknown',
+          'sellingprice': product['selling_price'] ?? 0.0,
+          'quantity': quantity,
+        });
+      }
+    }
+
+    // Send selected products to parent
+    if (selectedProducts.isNotEmpty) {
+      widget.onAddProduct(selectedProducts);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No products selected!'),
+          duration: Duration(seconds: 1),
+        ),
+      );
     }
   }
-
-  //  Send all selected products to parent
-  if (selectedProducts.isNotEmpty) {
-    widget.onAddProduct(selectedProducts);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No products selected!'),
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-}
-
 
   @override
   void initState() {
@@ -160,18 +176,24 @@ class BottomsheetState extends State<Bottomsheet> {
                         final sellingPrice =
                             product['selling_price']?.toString() ?? '0.00';
 
+                        // Find ordered product (if exists)
+                        final orderedProduct = widget.orderedProducts.firstWhere(
+                          (ordered) => ordered['Product Name'] == productName,
+                          orElse: () => {},
+                        );
+                        final minQuantity =
+                            orderedProduct.isNotEmpty ? orderedProduct['quantity'] : 0;
+
                         return Column(
                           children: [
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 2.0),
+                              padding: const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
                                   Expanded(
                                     flex: 3,
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           productName,
@@ -194,78 +216,65 @@ class BottomsheetState extends State<Bottomsheet> {
                                   Expanded(
                                     flex: 2,
                                     child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.remove,
-                                              color: Colors.red),
+                                          icon: const Icon(Icons.remove, color: Colors.red),
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[productName]
-                                                          ?.text ??
-                                                      '0') ??
-                                                  0;
-                                              if (currentQuantity > 0) {
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              if (currentQuantity > minQuantity) {
                                                 controllers[productName]?.text =
-                                                    (currentQuantity - 1)
-                                                        .toString();
+                                                    (currentQuantity - 1).toString();
                                               }
                                             });
                                           },
                                         ),
+                                        // Quantity TextField (Box)
+                                        SizedBox(
+                                          width: 50, // Set a width for the quantity box
+                                          child: TextField(
+                                            controller: controllers[productName],
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            decoration: const InputDecoration(
+                                              border: OutlineInputBorder(),
+                                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                            ),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                // Validate input to ensure only numbers are entered
+                                                controllers[productName]?.text =
+                                                    value.replaceAll(RegExp(r'[^0-9]'), '');
+                                              });
+                                            },
+                                          ),
+                                        ),
                                         IconButton(
-                                          icon: const Icon(Icons.add,
-                                              color: Colors.green),
+                                          icon: const Icon(Icons.add, color: Colors.green),
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[productName]
-                                                          ?.text ??
-                                                      '0') ??
-                                                  0;
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
                                               controllers[productName]?.text =
-                                                  (currentQuantity + 1)
-                                                      .toString();
+                                                  (currentQuantity + 1).toString();
                                             });
                                           },
                                         ),
                                       ],
                                     ),
                                   ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: SizedBox(
-                                      height: 30.0,
-                                      child: TextField(
-                                        controller: controllers[productName],
-                                        keyboardType: TextInputType.number,
-                                        textAlign: TextAlign.center,
-                                        decoration: const InputDecoration(
-                                          border: OutlineInputBorder(),
-                                          labelText: 'Qty',
-                                          contentPadding: EdgeInsets.symmetric(
-                                              vertical: 8.0),
-                                        ),
-                                        style: const TextStyle(fontSize: 14.0),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
-                            const Divider(
-                              thickness: 1.0,
-                              color: Colors.grey,
-                            ),
+                            const Divider(thickness: 1.0, color: Colors.grey),
                           ],
                         );
                       },
                     ),
                   ),
                 ),
-                // Add button in footer
                 Padding(
                   padding: const EdgeInsets.all(10.0),
                   child: ElevatedButton(
