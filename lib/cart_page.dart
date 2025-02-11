@@ -12,10 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Adjust the path as necessary
 
 class Cart {
-<<<<<<< HEAD
-=======
   // Store the selected products in the cart
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
   static final List<Map<String, dynamic>> selectedProducts = [];
 }
 
