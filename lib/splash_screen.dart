@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+<<<<<<< Updated upstream
 import 'package:shared_preferences/shared_preferences.dart';  // To access SharedPreferences
 import 'user_service.dart';  // Import the user service to fetch the username
+=======
+>>>>>>> Stashed changes
 import 'signup_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,7 +19,10 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+<<<<<<< Updated upstream
   String username = '';
+=======
+>>>>>>> Stashed changes
 
   @override
   void initState() {
@@ -69,7 +75,11 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
+<<<<<<< Updated upstream
             colors: [Color.fromARGB(255, 185, 92, 15), Color.fromARGB(255, 173, 139, 25)],
+=======
+            colors: [const Color.fromARGB(255, 185, 92, 15), Color.fromARGB(255, 173, 139, 25)],
+>>>>>>> Stashed changes
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -143,6 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
                           letterSpacing: 1.2,
                         ),
                       ),
+<<<<<<< Updated upstream
                       // Display the fetched username if available
                       if (username.isNotEmpty) 
                         Text(
@@ -152,6 +163,18 @@ class _SplashScreenState extends State<SplashScreen>
                             color: Color.fromARGB(255, 7, 6, 6),
                           ),
                         ),
+=======
+                      // const SizedBox(height: 10),
+                      // const Text(
+                      //   'Your shopping destination',
+                      //   textAlign: TextAlign.center,
+                      //   style: TextStyle(
+                      //     fontSize: 16,
+                      //     fontStyle: FontStyle.italic,
+                      //     color: Color.fromARGB(179, 8, 8, 8),
+                      //   ),
+                      // ),
+>>>>>>> Stashed changes
                     ],
                   ),
                 ),

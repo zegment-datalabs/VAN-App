@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:van_app_demo/homepage.dart';
 import 'package:van_app_demo/category/productspage.dart';
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
 <<<<<<< HEAD
@@ -13,12 +14,18 @@ import 'order_page.dart'; // Add this import at the top if OrderPage is in anoth
 =======
 import 'package:van_app_demo/cart_page.dart';
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+import 'package:van_app_demo/cart_page.dart';
+>>>>>>> Stashed changes
 import 'package:van_app_demo/category/allproducts.dart';
 import 'package:van_app_demo/myaccount.dart';
 import 'package:van_app_demo/myorders_page.dart';
 import 'package:van_app_demo/login_page.dart';
 
+<<<<<<< Updated upstream
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
+=======
+>>>>>>> Stashed changes
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
 
@@ -30,11 +37,18 @@ class _CategoryPageState extends State<CategoryPage> {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String searchQuery = '';
+<<<<<<< Updated upstream
   String _name = "User"; // Default name
   List<Map<String, dynamic>> filteredProducts = [];
   Map<String, TextEditingController> controllers = {};
   int _selectedIndex = 0;
   String _profilePicUrl = "";
+=======
+  String _name = "User"; 
+  List<Map<String, dynamic>> filteredProducts = [];
+  Map<String, TextEditingController> controllers = {};
+  int _selectedIndex = 0;
+>>>>>>> Stashed changes
 
   @override
   void initState() {
@@ -53,7 +67,10 @@ class _CategoryPageState extends State<CategoryPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _name = prefs.getString('name') ?? 'User';
+<<<<<<< Updated upstream
       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+=======
+>>>>>>> Stashed changes
     });
   }
 
@@ -154,6 +171,7 @@ class _CategoryPageState extends State<CategoryPage> {
               decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
                 children: [
+<<<<<<< Updated upstream
                    CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicUrl.isNotEmpty
@@ -168,6 +186,17 @@ class _CategoryPageState extends State<CategoryPage> {
                   Text(
                     _name, // Loaded name
                     style: const TextStyle(color: Colors.black, fontSize: 15.0),
+=======
+                  const CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Color.fromARGB(255, 182, 204, 209),
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 20.0),
+>>>>>>> Stashed changes
                   ),
                 ],
               ),
@@ -183,6 +212,7 @@ class _CategoryPageState extends State<CategoryPage> {
               onTap: () => _onItemTapped(1),
             ),
             ListTile(
+<<<<<<< Updated upstream
 <<<<<<< HEAD
               leading: const Icon(Icons.category),
               title: const Text('All products'),
@@ -198,6 +228,8 @@ class _CategoryPageState extends State<CategoryPage> {
                 );
               },
 =======
+=======
+>>>>>>> Stashed changes
               leading: const Icon(Icons.shopping_cart),
               title: const Text('Cart'),
               onTap: () => _onItemTapped(2),
@@ -206,7 +238,10 @@ class _CategoryPageState extends State<CategoryPage> {
               leading: const Icon(Icons.view_list),
               title: const Text('All Products'),
               onTap: () => _onItemTapped(3),
+<<<<<<< Updated upstream
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
             ),
             ListTile(
               leading: const Icon(Icons.assignment),

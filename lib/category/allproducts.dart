@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart';
@@ -26,7 +25,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
   String _name = "User"; // Default name
   bool isLoading = true;
   int _selectedIndex = 0;
+<<<<<<< Updated upstream
   String _profilePicUrl = "";
+=======
+>>>>>>> Stashed changes
 
   
 
@@ -42,7 +44,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _name = prefs.getString('name') ?? 'User';
+<<<<<<< Updated upstream
        _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+=======
+>>>>>>> Stashed changes
     });
   }
 
@@ -220,19 +225,11 @@ void initState() {
     _scrollController.dispose();
     super.dispose();
   }
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-<<<<<<< HEAD
-        title: const Text('All products'),
-      ),
-      body: const Center(
-        child: Text('All products page'),
-      ),
-=======
         title: const Text('All Products'),
         backgroundColor: const Color.fromARGB(255, 185, 92, 15),
         actions: [
@@ -265,6 +262,7 @@ icon: const Icon(Icons.menu,color: Colors.black),
               decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
                 children: [
+<<<<<<< Updated upstream
                   CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicUrl.isNotEmpty
@@ -279,6 +277,17 @@ icon: const Icon(Icons.menu,color: Colors.black),
                   Text(
                     _name, // Loaded name
                     style: const TextStyle(color: Colors.black, fontSize: 15.0),
+=======
+                  const CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Color.fromARGB(255, 182, 204, 209),
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 20.0),
+>>>>>>> Stashed changes
                   ),
                 ],
               ),
@@ -525,9 +534,12 @@ icon: const Icon(Icons.menu,color: Colors.black),
                 ),
               ],
             ),
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 =======
+=======
+>>>>>>> Stashed changes
              bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.only(
@@ -555,7 +567,10 @@ icon: const Icon(Icons.menu,color: Colors.black),
           ],
         ),
              ),
+<<<<<<< Updated upstream
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
     );
   }
 }

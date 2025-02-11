@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart'; // Import the HomePage
 import 'package:van_app_demo/category/categorypage.dart'; // Import the CategoryPage
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 import 'package:van_app_demo/category/order_page.dart';
 <<<<<<< HEAD
@@ -12,11 +13,18 @@ import 'package:van_app_demo/category/allproducts.dart';
 =======
 import 'package:van_app_demo/myorders_page.dart';
 import 'package:van_app_demo/category/allproducts.dart';
+=======
+import 'package:van_app_demo/myorders_page.dart';
+import 'package:van_app_demo/category/allproducts.dart';
+>>>>>>> Stashed changes
 import 'package:van_app_demo/login_page.dart';
 import 'package:van_app_demo/myaccount.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/cupertino.dart';
+<<<<<<< Updated upstream
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
 
 class ProductsPage extends StatefulWidget {
   final String categoryTitle;
@@ -34,11 +42,18 @@ class _ProductsPageState extends State<ProductsPage> {
   bool isLoading = true;
   bool isLoadingMore = false;
   String _name = "User";
+<<<<<<< Updated upstream
    String _profilePicUrl = "";
 
   // Pagination variables
   int currentPage = 1;
   final int itemsPerPage = 8;
+=======
+
+  // Pagination variables
+  int currentPage = 1;
+  final int itemsPerPage = 10;
+>>>>>>> Stashed changes
 
   // Search functionality
   TextEditingController searchController = TextEditingController();
@@ -54,7 +69,10 @@ class _ProductsPageState extends State<ProductsPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _name = prefs.getString('name') ?? 'User';
+<<<<<<< Updated upstream
        _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+=======
+>>>>>>> Stashed changes
     });
   }
 
@@ -166,14 +184,22 @@ class _ProductsPageState extends State<ProductsPage> {
     });
   }
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
   Future<void> _addToGlobalCart() async {
+    bool hasItemsToAdd = false;
+
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
+      final sellingPrice =
+          double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       if (quantity > 0) {
+<<<<<<< Updated upstream
         // Check if the product already exists in the global cart
 =======
    Future<void> _addToGlobalCart() async {
@@ -195,25 +221,20 @@ class _ProductsPageState extends State<ProductsPage> {
         hasItemsToAdd = true; // There's at least one item to add
 
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+        hasItemsToAdd = true; // There's at least one item to add
+
+>>>>>>> Stashed changes
         final existingIndex =
             Cart.selectedProducts.indexWhere((p) => p['title'] == productName);
 
         if (existingIndex >= 0) {
-<<<<<<< HEAD
-          // Replace the quantity with the current value from the Qty box
-          Cart.selectedProducts[existingIndex]['quantity'] = quantity;
-        } else {
-          // Add a new product to the cart
-          Cart.selectedProducts.add({
-            ...product,
-=======
           Cart.selectedProducts[existingIndex]['quantity'] = quantity;
         } else {
           Cart.selectedProducts.add({
             'title': productName,
             'category': product['category'] ?? 'Unknown',
             'sellingPrice': sellingPrice,
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
             'quantity': quantity,
           });
         }
@@ -379,6 +400,7 @@ void _onItemTapped(int index) {
               decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
                 children: [
+<<<<<<< Updated upstream
                   CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicUrl.isNotEmpty
@@ -393,6 +415,17 @@ void _onItemTapped(int index) {
                   Text(
                     _name, // Loaded name
                     style: const TextStyle(color: Colors.black, fontSize: 15.0),
+=======
+                  const CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Color.fromARGB(255, 182, 204, 209),
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 20.0),
+>>>>>>> Stashed changes
                   ),
                 ],
               ),
@@ -407,12 +440,11 @@ void _onItemTapped(int index) {
               title: const Text('Categories'),
               onTap: () => _onItemTapped(1),
             ),
-<<<<<<< HEAD
-=======
             ListTile(
               leading: const Icon(Icons.shopping_cart),
               title: const Text('Cart'),
               onTap: () => _onItemTapped(2),
+<<<<<<< Updated upstream
             ),
             ListTile(
               leading: const Icon(Icons.view_list),
@@ -424,6 +456,14 @@ void _onItemTapped(int index) {
             // Add Order menu item
 =======
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+            ),
+            ListTile(
+              leading: const Icon(Icons.view_list),
+              title: const Text('All Products'),
+              onTap: () => _onItemTapped(3),
+            ),
+>>>>>>> Stashed changes
             ListTile(
               leading: const Icon(Icons.assignment),
               title: const Text('My Orders'),
@@ -468,28 +508,71 @@ void _onItemTapped(int index) {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ListView.builder(
+<<<<<<< Updated upstream
 <<<<<<< HEAD
                       controller: _scrollController, // Assign ScrollController
                       itemCount: filteredProducts.length,
 <<<<<<< HEAD
+=======
+                      controller: _scrollController,
+                      itemCount:
+                          currentPageProducts.length + (isLoadingMore ? 1 : 0),
+>>>>>>> Stashed changes
                       itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
+                        if (index == currentPageProducts.length) {
+                          return const Center(
+                            child: CupertinoActivityIndicator(),
+                          );
+                        }
+                      final product = currentPageProducts[index];
+                        final productImageUrl =
+                            product['product_url']; // Image URL from Firestore
                         final productName = product['title'] ?? 'Unknown';
                         final sellingPrice =
                             product['selling_price']?.toString() ?? '0.00';
-                        final quantity =
-                            int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                        final quantity = int.tryParse(
+                                controllers[productName]?.text ?? '0') ?? 0;
+                      // itemCount: currentPageProducts.length,
+                      // itemBuilder: (context, index) {
+                      //   final product = currentPageProducts[index];
+                      //   final productImageUrl =
+                      //       product['product_url']; // Image URL from Firestore
+                      //   final productName = product['title'] ?? 'Unknown';
+                      //   final sellingPrice =
+                      //       product['selling_price']?.toString() ?? '0.00';
+                      //   final quantity = int.tryParse(
+                      //           controllers[productName]?.text ?? '0') ?? 0;
 
                         return Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2.0), // Reduced padding here
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
+                                  // Product Image
+                                  Expanded(
+                                    flex: 1,
+                                    child: productImageUrl != null &&
+                                            productImageUrl.isNotEmpty
+                                        ? Image.network(
+                                            productImageUrl,
+                                            height: 50.0,
+                                            width:
+                                                70.0, // Adjust height of the image
+                                            fit: BoxFit
+                                                .cover, // Adjust image fit
+                                          )
+                                        : const Icon(Icons.image,
+                                            size:
+                                                70.0), // Placeholder if no image URL
+                                  ),
+                                  // Product Name and Price
                                   Expanded(
                                     flex: 3,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           productName,
@@ -499,7 +582,7 @@ void _onItemTapped(int index) {
                                           ),
                                         ),
                                         Text(
-                                          '\$ $sellingPrice',
+                                          '₹ $sellingPrice',
                                           style: const TextStyle(
                                             fontSize: 14.0,
                                             fontWeight: FontWeight.bold,
@@ -509,16 +592,20 @@ void _onItemTapped(int index) {
                                       ],
                                     ),
                                   ),
+                                  // Quantity Controls
                                   Expanded(
                                     flex: 2,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.remove, color: Colors.red),
+                                          icon: const Icon(Icons.remove,
+                                              color: Colors.red),
                                           onPressed: () {
                                             setState(() {
-                                              final currentQuantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
                                               if (currentQuantity > 0) {
                                                 controllers[productName]?.text = (currentQuantity - 1).toString();
                                               }
@@ -526,10 +613,12 @@ void _onItemTapped(int index) {
                                           },
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.add, color: Colors.green),
+                                          icon: const Icon(Icons.add,
+                                              color: Colors.green),
                                           onPressed: () {
                                             setState(() {
-                                              final currentQuantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                              final currentQuantity =
+                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
                                               controllers[productName]?.text = (currentQuantity + 1).toString();
                                             });
                                           },
@@ -537,37 +626,31 @@ void _onItemTapped(int index) {
                                       ],
                                     ),
                                   ),
+                                  // Quantity Input
                                   Expanded(
                                     flex: 1,
-                                    child: TextField(
-                                      controller: controllers[productName],
-                                      keyboardType: TextInputType.number,
-                                      textAlign: TextAlign.center,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        labelText: 'Qty',
-                                        contentPadding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0), // Reducing padding to decrease height
+                                    child: Container(
+                                      height: 30.0,
+                                      child: TextField(
+                                        controller: controllers[productName],
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          labelText: 'Qty',
+                                        ),
+                                        style: const TextStyle(fontSize: 14.0),
                                       ),
-                                      style: const TextStyle(fontSize: 14.0), // Reduce font size to make the input smaller
-                                      onChanged: (value) {
-                                        setState(() {
-                                          final newQuantity = int.tryParse(value) ?? 0;
-                                          controllers[productName]?.text =
-                                              newQuantity < 0 ? '0' : newQuantity.toString();
-                                        });
-                                      },
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Divider(
-                              thickness: 1.0, // Controls the thickness of the line
-                              color: Colors.grey, // Sets the line color
-                            ),
+                            const Divider(),
                           ],
                         );
                       },
+<<<<<<< Updated upstream
 =======
                      itemBuilder: (context, index) {
   final product = filteredProducts[index];
@@ -758,6 +841,8 @@ void _onItemTapped(int index) {
                         );
                       },
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
                     ),
                   ),
                 ),

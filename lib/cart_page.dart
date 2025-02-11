@@ -9,7 +9,10 @@ import 'package:van_app_demo/myaccount.dart';
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+<<<<<<< Updated upstream
 // Adjust the path as necessary
+=======
+>>>>>>> Stashed changes
 
 class Cart {
   // Store the selected products in the cart
@@ -31,20 +34,27 @@ class CartPageState extends State<CartPage> {
   int _selectedIndex = 3; // Set the index to 3 for the CartPage
   String _name = "User";
   bool isLoading = true;
+<<<<<<< Updated upstream
    String _profilePicUrl = "";
+=======
+>>>>>>> Stashed changes
 
 
  Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _name = prefs.getString('name') ?? 'User';
+<<<<<<< Updated upstream
        _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+=======
+>>>>>>> Stashed changes
     });
   }
 
 
   void initState() {
     super.initState();
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
 
@@ -53,8 +63,11 @@ class CartPageState extends State<CartPage> {
       _loadUserData(); // Load username from SharedPreferences
     
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+      _loadUserData(); // Load username from SharedPreferences
+    
+>>>>>>> Stashed changes
     // Update the search query as user types
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
     searchController.addListener(() {
       setState(() {
         searchQuery = searchController.text;
@@ -70,6 +83,7 @@ class CartPageState extends State<CartPage> {
     
   }
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
   // Calculate total price and total quantity
@@ -98,6 +112,11 @@ class CartPageState extends State<CartPage> {
 double calculateTotalAmount() {
   double totalAmount = Cart.selectedProducts.fold<double>(
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+  // Calculate the total price of all products in the cart with 2 decimal places
+double calculateTotalAmount() {
+  double totalAmount = Cart.selectedProducts.fold<double>(
+>>>>>>> Stashed changes
     0.0,
     (total, product) {
       final quantity = (product['quantity'] as num?)?.toDouble() ?? 0.0; // Ensure double
@@ -117,6 +136,7 @@ String calculateTotalQuantity() {
   return totalQuantity.toStringAsFixed(2); // Ensure exactly 2 decimal places
 }
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
   // Calculate the total quantity of all products in the cart
   int calculateTotalQuantity() {
@@ -126,6 +146,8 @@ String calculateTotalQuantity() {
     );
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 =======
+=======
+>>>>>>> Stashed changes
   // Handle navigation item taps
   void _onItemTapped(int index) {
     setState(() {
@@ -166,15 +188,15 @@ String calculateTotalQuantity() {
       default:
         break;
     }
+<<<<<<< Updated upstream
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
   }
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-=======
     // Filter products based on search query
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
     final filteredProducts = Cart.selectedProducts.where((product) {
       final productTitle = product['title']?.toLowerCase() ?? '';
       return productTitle.contains(searchQuery.toLowerCase());
@@ -182,7 +204,11 @@ String calculateTotalQuantity() {
 
     return Scaffold(
       appBar: AppBar(
+<<<<<<< Updated upstream
         title: const Text('Item Basket'),
+=======
+        title: const Text('Shopping Cart'),
+>>>>>>> Stashed changes
         backgroundColor: const Color.fromARGB(255, 185, 92, 15),
         centerTitle: true,
         actions: [
@@ -230,6 +256,7 @@ String calculateTotalQuantity() {
               decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
                 children: [
+<<<<<<< Updated upstream
                  CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicUrl.isNotEmpty
@@ -244,6 +271,17 @@ String calculateTotalQuantity() {
                   Text(
                     _name, // Loaded name
                     style: const TextStyle(color: Colors.black, fontSize: 15.0),
+=======
+                  const CircleAvatar(
+                    radius: 30.0,
+                    backgroundColor: Color.fromARGB(255, 182, 204, 209),
+                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 20.0),
+>>>>>>> Stashed changes
                   ),
                 ],
               ),
@@ -317,10 +355,7 @@ String calculateTotalQuantity() {
 
       body: Column(
         children: [
-<<<<<<< HEAD
-=======
           // Search bar visibility toggle
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
           if (isSearchVisible)
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -361,10 +396,6 @@ String calculateTotalQuantity() {
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
-<<<<<<< HEAD
-                      final sellingPrice = product['selling_price']?.toString() ?? '0.00'; // Fetch selling price
-=======
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 
                       return Column(
                         children: [
@@ -392,26 +423,27 @@ String calculateTotalQuantity() {
                                     ),
                                   ),
                                   Text(
-<<<<<<< HEAD
-                                    'Quantity: ${product['quantity']}',
-=======
                                     'Quantity: ${product['quantity'] ?? 0}',
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                     style: TextStyle(
                                       fontSize: 14.0,
                                       color: Colors.grey[600],
                                     ),
                                   ),
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
                                   // Displaying the selling price under quantity
+=======
+>>>>>>> Stashed changes
                                   Text(
-                                    'Selling Price: \$ $sellingPrice',
-                                    style: TextStyle(
+                                    '₹ Price-${(double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
+                                    style: const TextStyle(
                                       fontSize: 14.0,
-                                      color: Colors.green[600],
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
                                     ),
                                   ),
+<<<<<<< Updated upstream
 =======
                                   
                                 Text(
@@ -435,15 +467,14 @@ String calculateTotalQuantity() {
                                     ),
                                   ),
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+>>>>>>> Stashed changes
                                 ],
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-<<<<<<< HEAD
-=======
                                   // Decrement quantity or remove item
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.remove, color: Colors.red),
                                     onPressed: () {
@@ -456,10 +487,7 @@ String calculateTotalQuantity() {
                                       });
                                     },
                                   ),
-<<<<<<< HEAD
-=======
                                   // Increment quantity
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.add, color: Colors.green),
                                     onPressed: () {
@@ -468,10 +496,7 @@ String calculateTotalQuantity() {
                                       });
                                     },
                                   ),
-<<<<<<< HEAD
-=======
                                   // Remove item from cart
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Color.fromARGB(255, 139, 28, 20),),
                                     onPressed: () {
@@ -497,11 +522,8 @@ String calculateTotalQuantity() {
                     },
                   ),
           ),
-<<<<<<< HEAD
-          // Footer Section with Total Price, Total Quantity, and Place Order button
-          Padding(
-=======
           // Footer with Total and Place Order Button
+<<<<<<< Updated upstream
 <<<<<<< HEAD
         Container(
             color: Colors.white,
@@ -519,38 +541,75 @@ String calculateTotalQuantity() {
                       style: const TextStyle(
                         fontSize: 16.0,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Total Price: \$${totalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Place Order logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order placed successfully!')),
 =======
-                Text(
-                  'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 5, 7, 7),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order Placed!')),
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
+          Container(
+  color: Colors.white,
+  padding: const EdgeInsets.all(16.0),
+  child: Column(
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
+            style: const TextStyle(
+              fontSize: 16.0,
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 5, 7, 7),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Cancel Button - Clears the cart
+          ElevatedButton(
+            onPressed: Cart.selectedProducts.isEmpty
+                ? null
+                : () {
+                    setState(() {
+                      Cart.selectedProducts.clear();
+                    });
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 139, 28, 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontSize: 16.0, color: Colors.white),
+            ),
+          ),
+          // Place Order Button
+          ElevatedButton(
+            onPressed: Cart.selectedProducts.isEmpty
+                ? null
+                : () {
+                    double orderValue = calculateTotalAmount();
+                    List<Map<String, dynamic>> orderedProducts = List.from(Cart.selectedProducts);
+
+                    // Clear the cart before navigation
+                    setState(() {
+                      Cart.selectedProducts.clear();
+                    });
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ConfirmationPage(
+                          orderValue: orderValue,
+                          quantity: calculateTotalAmount(),
+                          selectedProducts: orderedProducts, // Pass a copy of the products
+                        ),
+>>>>>>> Stashed changes
+                      ),
                     );
                   },
+<<<<<<< Updated upstream
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
 <<<<<<< HEAD
@@ -583,7 +642,53 @@ String calculateTotalQuantity() {
               fontSize: 16.0,
               fontWeight: FontWeight.bold,
               color: Color.fromARGB(255, 5, 7, 7),
+=======
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Cart.selectedProducts.isEmpty ? const Color.fromARGB(255, 209, 205, 205) : const Color.fromARGB(255, 199, 124, 11),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+>>>>>>> Stashed changes
             ),
+            child: const Text(
+              'Place Order',
+              style: TextStyle(fontSize: 16.0, color: Color.fromARGB(255, 24, 4, 4)),
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: const Color.fromARGB(255, 12, 14, 13),
+        unselectedItemColor: const Color.fromARGB(255, 7, 7, 7),
+        type: BottomNavigationBarType.fixed,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
+          
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(  // All Products Item
+            icon: Icon(Icons.view_list),
+            label: 'All Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'My Account',
           ),
         ],
       ),
@@ -686,6 +791,7 @@ String calculateTotalQuantity() {
       ),
     );
   }
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
 }
@@ -695,3 +801,6 @@ String calculateTotalQuantity() {
 =======
 }
 >>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+=======
+}
+>>>>>>> Stashed changes

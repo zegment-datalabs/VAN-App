@@ -7,7 +7,10 @@ import 'package:van_app_demo/category/categorypage.dart';
 import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/category/allproducts.dart';
 import 'package:van_app_demo/myaccount.dart';
+<<<<<<< Updated upstream
 import 'package:van_app_demo/myorders_page.dart';
+=======
+>>>>>>> Stashed changes
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,7 +21,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? userEmail;
+<<<<<<< Updated upstream
  String _profilePicUrl = "";
+=======
+  String? profilePicPath;
+>>>>>>> Stashed changes
   String? userName;
 
   final FirebaseFirestore db = FirebaseFirestore.instance;
@@ -35,9 +42,15 @@ class _HomePageState extends State<HomePage> {
   void _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
+<<<<<<< Updated upstream
       userEmail = prefs.getString('emailOrPhone') ?? 'Guest';
        _profilePicUrl = prefs.getString('profilePicPath') ?? "";
    userName = prefs.getString('name') ?? 'Guest';
+=======
+      userEmail = prefs.getString('emailPhone') ?? 'Guest';
+      profilePicPath = prefs.getString('profilePicPath') ?? 'https://via.placeholder.com/150';
+      userName = prefs.getString('name') ?? 'Guest';
+>>>>>>> Stashed changes
     });
 
 
@@ -46,6 +59,53 @@ class _HomePageState extends State<HomePage> {
   }
 
   
+   void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        );
+        break;
+      // case 2:
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (context) =>  OrderPage(orderValue: 0, quantity: 0, selectedProducts: [])),
+      //   );
+      //   break;
+     case 2:
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const CartPage()),
+  );
+  break;
+   case 3:  // For All Products page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AllProductsPage()),
+        );
+        break;
+  case 4:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  MyAccountPage()),
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
    void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -1430,6 +1490,7 @@ IconData getCategoryIcon(String iconName) {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+<<<<<<< Updated upstream
                   CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicUrl.isNotEmpty
@@ -1442,6 +1503,13 @@ IconData getCategoryIcon(String iconName) {
                 ),
 
             const SizedBox(height: 10),
+=======
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: NetworkImage(profilePicPath!),
+                ),
+                const SizedBox(height: 10),
+>>>>>>> Stashed changes
                 Text("Welcome, ${userName ?? 'loading'}!", style: const TextStyle(fontSize: 24)),
               ],
             ),
@@ -1453,10 +1521,17 @@ IconData getCategoryIcon(String iconName) {
               crossAxisSpacing: 20,
               mainAxisSpacing: 20,
               children: [
+<<<<<<< Updated upstream
                 // _buildGridButton(Icons.category, "Add Category", Colors.blue, _addCategoryData),
 
                 // _buildGridButton(Icons.add_shopping_cart, "Add Product", Colors.green, _addProductData),
                
+=======
+                _buildGridButton(Icons.category, "Add Category", Colors.blue, _addCategoryData),
+
+                _buildGridButton(Icons.add_shopping_cart, "Add Product", Colors.green, _addProductData),
+                _buildGridButton(Icons.logout, "Logout", Colors.red, _logout),
+>>>>>>> Stashed changes
                 _buildGridButton(Icons.update, "Order Management", Colors.orange, () {
                   Navigator.push(
                     context,
@@ -1469,6 +1544,7 @@ IconData getCategoryIcon(String iconName) {
                     MaterialPageRoute(builder: (context) => const AllProductsPage()),
                   );
                 }),
+<<<<<<< Updated upstream
                _buildGridButton(Icons.shopping_cart, "My Orders", Colors.blue, () {
                       Navigator.push(
                         context,
@@ -1479,6 +1555,8 @@ IconData getCategoryIcon(String iconName) {
 
                 
             
+=======
+>>>>>>> Stashed changes
               ],
             ),
           ),
