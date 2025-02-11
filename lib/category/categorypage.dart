@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:van_app_demo/homepage.dart'; // Import HomePage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:van_app_demo/homepage.dart';
 import 'package:van_app_demo/category/productspage.dart';
+<<<<<<< HEAD
 import 'package:van_app_demo/cart_page.dart'; // Import the CartPage
 <<<<<<< HEAD
 import 'allproducts.dart';
 import 'order_page.dart'; // Add this import at the top if OrderPage is in another file
 
 =======
+=======
+import 'package:van_app_demo/cart_page.dart';
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
 import 'package:van_app_demo/category/allproducts.dart';
-
-import 'order_page.dart'; // Add this import at the top if OrderPage is in another file
+import 'package:van_app_demo/myaccount.dart';
+import 'package:van_app_demo/myorders_page.dart';
+import 'package:van_app_demo/login_page.dart';
 
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
 class CategoryPage extends StatefulWidget {
@@ -24,10 +30,16 @@ class _CategoryPageState extends State<CategoryPage> {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String searchQuery = '';
+  String _name = "User"; // Default name
+  List<Map<String, dynamic>> filteredProducts = [];
+  Map<String, TextEditingController> controllers = {};
+  int _selectedIndex = 0;
+  String _profilePicUrl = "";
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
 
     // Attach listener to update search query
     searchController.addListener(() {
@@ -37,11 +49,63 @@ class _CategoryPageState extends State<CategoryPage> {
     });
   }
 
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name = prefs.getString('name') ?? 'User';
+      _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+    });
+  }
+
   @override
   void dispose() {
     searchController.dispose();
     searchFocusNode.dispose();
+    for (var controller in controllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CartPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AllProductsPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyAccountPage()),
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -49,40 +113,32 @@ class _CategoryPageState extends State<CategoryPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
+        automaticallyImplyLeading: false,
         actions: [
-          // HomePage Button in the AppBar
           IconButton(
-            icon: const Icon(Icons.home),
+            icon: const Icon(Icons.home, color: Colors.black),
             onPressed: () {
-              // Navigate to the HomePage
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const HomePage()),
               );
             },
           ),
-
-          // Cart Button in the AppBar
           IconButton(
-            icon: const Icon(Icons.shopping_cart),
+            icon: const Icon(Icons.shopping_cart, color: Colors.black),
             onPressed: () {
-              // Navigate to the CartPage
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const CartPage()), // Ensure CartPage is imported correctly
+                MaterialPageRoute(builder: (context) => const CartPage()),
               );
             },
           ),
-          // Drawer Toggle Button beside Cart Button
           Builder(
             builder: (context) {
               return IconButton(
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu, color: Colors.black),
                 onPressed: () {
-                  // Open Drawer on the right side
                   Scaffold.of(context).openEndDrawer();
                 },
               );
@@ -90,65 +146,44 @@ class _CategoryPageState extends State<CategoryPage> {
           ),
         ],
       ),
-      // Right-side Drawer (End Drawer)
       endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: <Widget>[
-            // Drawer header with user info
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.teal,
-              ),
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 30.0,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
-                  ),
-                  SizedBox(height: 10.0),
+                children: [
+                   CircleAvatar(
+                  radius: 50,
+                  backgroundImage: _profilePicUrl.isNotEmpty
+                      ? NetworkImage(_profilePicUrl)
+                      : null, // No image if URL is empty
+                  child: _profilePicUrl.isEmpty
+                      ? Icon(Icons.person, size: 30, color: Colors.white) // Placeholder icon
+                      : null, // No icon if URL is available
+                  backgroundColor: Colors.grey.shade400, // Background color for the icon
+                ),
+                  const SizedBox(height: 10.0),
                   Text(
-                    'User Name',
-                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 15.0),
                   ),
                 ],
               ),
             ),
-            // Drawer menu items
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Home'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text('Cart'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
+              onTap: () => _onItemTapped(0),
             ),
             ListTile(
               leading: const Icon(Icons.category),
               title: const Text('Categories'),
-              onTap: () {
-                // Navigate to CategoryPage when "Categories" is tapped
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CategoryPage()),
-                );
-              },
+              onTap: () => _onItemTapped(1),
             ),
             ListTile(
+<<<<<<< HEAD
               leading: const Icon(Icons.category),
               title: const Text('All products'),
               onTap: () {
@@ -162,26 +197,35 @@ class _CategoryPageState extends State<CategoryPage> {
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                 );
               },
+=======
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Cart'),
+              onTap: () => _onItemTapped(2),
             ),
-            // Add Order menu item
+            ListTile(
+              leading: const Icon(Icons.view_list),
+              title: const Text('All Products'),
+              onTap: () => _onItemTapped(3),
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+            ),
             ListTile(
               leading: const Icon(Icons.assignment),
-              title: const Text('Orders'),
+              title: const Text('My Orders'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => OrderPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => MyOrdersPage()),
                 );
               },
             ),
-            // Add Logout menu item
             ListTile(
               leading: const Icon(Icons.exit_to_app),
               title: const Text('Logout'),
               onTap: () {
-                // Implement logout functionality if needed
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
               },
             ),
           ],
@@ -189,7 +233,6 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -201,28 +244,16 @@ class _CategoryPageState extends State<CategoryPage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                suffixIcon: searchFocusNode.hasFocus
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          searchFocusNode.unfocus();
-                        },
-                      )
-                    : null,
               ),
             ),
           ),
-          // Category Stream Builder
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream:
                   FirebaseFirestore.instance.collection('category').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -236,73 +267,104 @@ class _CategoryPageState extends State<CategoryPage> {
                 }
 
                 final categories = snapshot.data!.docs;
-
-                // Filter categories based on search query
                 final filteredCategories = categories.where((category) {
                   final categoryTitle = category['title']?.toLowerCase() ?? '';
                   return categoryTitle.contains(searchQuery.toLowerCase());
                 }).toList();
 
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8.0,
-                      mainAxisSpacing: 8.0,
-                      childAspectRatio: 1.0,
-                    ),
-                    itemCount: filteredCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = filteredCategories[index].data()
-                          as Map<String, dynamic>;
-                      return Card(
-                        elevation: 4.0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductsPage(
-                                  categoryTitle:
-                                      category['title'] ?? 'No Title',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons
-                                    .category, // Replace with a dynamic icon if stored in Firestore
-                                size: 40.0,
-                                color: Colors.teal,
-                              ),
-                              const SizedBox(height: 8.0),
-                              Text(
-                                category['title'] ?? 'No Title',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                return GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8.0,
+                    mainAxisSpacing: 8.0,
                   ),
+                  itemCount: filteredCategories.length,
+                  itemBuilder: (context, index) {
+                    final category = filteredCategories[index].data()
+                        as Map<String, dynamic>;
+                    return Card(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductsPage(
+                                categoryTitle: category['title'] ?? 'No Title',
+                              ),
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                          if (category['icon'] != null && category['icon'].isNotEmpty)
+                            Image.network(
+                              category['icon'],
+                              height: 80.0,
+                              width: 100.0,
+                              fit: BoxFit.cover,
+                            ),
+                          const SizedBox(height: 8.0),
+                          Text(
+                            category['title'] ?? 'No Title',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+          ),
+          boxShadow: [
+            BoxShadow(color: Color.fromARGB(31, 24, 211, 55), blurRadius: 5.0)
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: const Color.fromARGB(255, 12, 14, 13),
+          unselectedItemColor: const Color.fromARGB(255, 7, 7, 7),
+          type: BottomNavigationBarType.fixed,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.category),
+              label: 'Category',
+            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.assignment),
+            //   label: 'Orders',
+            // ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart),
+              label: 'Cart',
+            ),
+            BottomNavigationBarItem(
+              // All Products Item
+              icon: Icon(Icons.view_list),
+              label: 'All Products',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'My Account',
+            ),
+          ],
+        ),
       ),
     );
   }

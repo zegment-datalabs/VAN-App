@@ -1,4 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:van_app_demo/category/allproducts.dart';
+import 'package:van_app_demo/login_page.dart';
+import 'category/confirmation_page.dart';
+import 'package:van_app_demo/homepage.dart';
+import 'package:van_app_demo/category/categorypage.dart'; 
+import 'package:van_app_demo/myorders_page.dart';
+import 'package:van_app_demo/myaccount.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Adjust the path as necessary
 
 class Cart {
 <<<<<<< HEAD
@@ -20,13 +31,31 @@ class CartPageState extends State<CartPage> {
   final FocusNode searchFocusNode = FocusNode();
   String searchQuery = '';
   bool isSearchVisible = false;
+  int _selectedIndex = 3; // Set the index to 3 for the CartPage
+  String _name = "User";
+  bool isLoading = true;
+   String _profilePicUrl = "";
 
-  @override
+
+ Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name = prefs.getString('name') ?? 'User';
+       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+    });
+  }
+
+
   void initState() {
     super.initState();
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
+=======
+      _loadUserData(); // Load username from SharedPreferences
+    
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
     // Update the search query as user types
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
     searchController.addListener(() {
@@ -41,8 +70,10 @@ class CartPageState extends State<CartPage> {
     searchController.dispose();
     searchFocusNode.dispose();
     super.dispose();
+    
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   // Calculate total price and total quantity
   double get totalPrice {
@@ -65,17 +96,31 @@ class CartPageState extends State<CartPage> {
   // Calculate the total price of all products in the cart
  double calculateTotalAmount() {
   double total = Cart.selectedProducts.fold<double>(
+=======
+  // Calculate the total price of all products in the cart with 2 decimal places
+double calculateTotalAmount() {
+  double totalAmount = Cart.selectedProducts.fold<double>(
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
     0.0,
     (total, product) {
-      final quantity = product['quantity'] is int ? product['quantity'] : 0;
+      final quantity = (product['quantity'] as num?)?.toDouble() ?? 0.0; // Ensure double
       final sellingPrice = double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
       return total + (quantity * sellingPrice);
     },
   );
-  return total;
+  return double.parse(totalAmount.toStringAsFixed(2)); // Ensure exactly 2 decimal places
 }
 
+// Calculate the total quantity of all products in the cart with 2 decimal places
+String calculateTotalQuantity() {
+  double totalQuantity = Cart.selectedProducts.fold<double>(
+    0.0,
+    (total, product) => total + ((product['quantity'] as num?)?.toDouble() ?? 0.0), // Ensure double
+  );
+  return totalQuantity.toStringAsFixed(2); // Ensure exactly 2 decimal places
+}
 
+<<<<<<< HEAD
   // Calculate the total quantity of all products in the cart
   int calculateTotalQuantity() {
     return Cart.selectedProducts.fold<int>(
@@ -83,6 +128,48 @@ class CartPageState extends State<CartPage> {
       (total, product) => total + (product['quantity'] ?? 0) as int,
     );
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
+=======
+  // Handle navigation item taps
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CategoryPage()),
+        );
+        break;
+      
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CartPage()),
+        );
+        break;
+      case 3:  // For All Products page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AllProductsPage()),
+        );
+        break;
+         case 4:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  MyAccountPage()),
+        );
+        break;
+      default:
+        break;
+    }
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
   }
 
   @override
@@ -98,12 +185,13 @@ class CartPageState extends State<CartPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Shopping Cart'),
-        backgroundColor: Colors.teal,
+        title: const Text('Item Basket'),
+        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
         centerTitle: true,
         actions: [
+          // Add the Search button (or keep it depending on your need)
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search,color: Colors.black),
             onPressed: () {
               setState(() {
                 isSearchVisible = !isSearchVisible;
@@ -116,8 +204,120 @@ class CartPageState extends State<CartPage> {
               });
             },
           ),
+          // The Add button to navigate to AllProductsPage
+          IconButton(
+            icon: const Icon(Icons.add,color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AllProductsPage()),
+              );
+            },
+          ),
+          // The Hamburger menu icon that opens the endDrawer
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu,color: Colors.black),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer(); // Open the end drawer
+              },
+            ),
+          ),
         ],
       ),
+   endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
+              child: Column(
+                children: [
+                 CircleAvatar(
+                  radius: 50,
+                  backgroundImage: _profilePicUrl.isNotEmpty
+                      ? NetworkImage(_profilePicUrl)
+                      : null, // No image if URL is empty
+                  child: _profilePicUrl.isEmpty
+                      ? Icon(Icons.person, size: 30, color: Colors.white) // Placeholder icon
+                      : null, // No icon if URL is available
+                  backgroundColor: Colors.grey.shade400, // Background color for the icon
+                ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    _name, // Loaded name
+                    style: const TextStyle(color: Colors.black, fontSize: 15.0),
+                  ),
+                ],
+              ),
+            ),
+      ListTile(
+        leading: const Icon(Icons.home),
+        title: const Text('Home'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        },
+      ),
+       ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Categories'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CategoryPage()),
+                );
+              },
+            ),
+      ListTile(
+        leading: const Icon(Icons.shopping_cart),
+        title: const Text('Cart'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CartPage()),
+          );
+        },
+      ),
+
+      ListTile(
+        leading: const Icon(Icons.category),
+        title: const Text('All Products'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const AllProductsPage()),
+          );
+        },
+      ),
+      ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text('My Orders'),
+              onTap: () {
+                Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MyOrdersPage()),
+            );
+
+              },
+            ),
+      ListTile(
+        leading: const Icon(Icons.exit_to_app),
+        title: const Text('Logout'),
+        onTap: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        },
+      ),
+    ],
+  ),
+),
+
       body: Column(
         children: [
 <<<<<<< HEAD
@@ -206,6 +406,7 @@ class CartPageState extends State<CartPage> {
                                     ),
                                   ),
 <<<<<<< HEAD
+<<<<<<< HEAD
                                   // Displaying the selling price under quantity
                                   Text(
                                     'Selling Price: \$ $sellingPrice',
@@ -227,6 +428,16 @@ class CartPageState extends State<CartPage> {
 
 
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
+=======
+                                  Text(
+                                    '₹ Price-${(double.tryParse(product['sellingPrice']?.toString() ?? '0.0') ?? 0.0).toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 14.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
                                 ],
                               ),
                               trailing: Row(
@@ -237,8 +448,7 @@ class CartPageState extends State<CartPage> {
                                   // Decrement quantity or remove item
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
-                                    icon: const Icon(Icons.remove,
-                                        color: Colors.red),
+                                    icon: const Icon(Icons.remove, color: Colors.red),
                                     onPressed: () {
                                       setState(() {
                                         if (product['quantity'] > 1) {
@@ -254,8 +464,7 @@ class CartPageState extends State<CartPage> {
                                   // Increment quantity
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
-                                    icon: const Icon(Icons.add,
-                                        color: Colors.green),
+                                    icon: const Icon(Icons.add, color: Colors.green),
                                     onPressed: () {
                                       setState(() {
                                         product['quantity']++;
@@ -267,19 +476,11 @@ class CartPageState extends State<CartPage> {
                                   // Remove item from cart
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
                                   IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
+                                    icon: const Icon(Icons.delete, color: Color.fromARGB(255, 139, 28, 20),),
                                     onPressed: () {
                                       setState(() {
                                         Cart.selectedProducts.removeAt(index);
                                       });
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Item removed from cart')),
-                                      );
                                     },
                                   ),
                                 ],
@@ -289,10 +490,10 @@ class CartPageState extends State<CartPage> {
                           if (index < filteredProducts.length - 1)
                             const Divider(
                               thickness: 1.0,
-                              height: 1.0, // Tight space between items
-                              color: Colors.black, // Black line color
-                              indent: 0.0, // Full width
-                              endIndent: 0.0, // Full width
+                              height: 1.0,
+                              color: Colors.black,
+                              indent: 0.0,
+                              endIndent: 0.0,
                             ),
                         ],
                       );
@@ -304,6 +505,7 @@ class CartPageState extends State<CartPage> {
           Padding(
 =======
           // Footer with Total and Place Order Button
+<<<<<<< HEAD
         Container(
             color: Colors.white,
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
@@ -369,14 +571,130 @@ class CartPageState extends State<CartPage> {
                   ),
                 ),
               ],
+=======
+          Container(
+  color: Colors.white,
+  padding: const EdgeInsets.all(16.0),
+  child: Column(
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total: ₹${calculateTotalAmount().toStringAsFixed(2)} | Qty: ${calculateTotalQuantity()}',
+            style: const TextStyle(
+              fontSize: 16.0,
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 5, 7, 7),
             ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Cancel Button - Clears the cart
+          ElevatedButton(
+            onPressed: Cart.selectedProducts.isEmpty
+                ? null
+                : () {
+                    setState(() {
+                      Cart.selectedProducts.clear();
+                    });
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 139, 28, 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontSize: 16.0, color: Colors.white),
+            ),
+          ),
+          // Place Order Button
+          ElevatedButton(
+            onPressed: Cart.selectedProducts.isEmpty
+                ? null
+                : () {
+                    double orderValue = calculateTotalAmount();
+                    List<Map<String, dynamic>> orderedProducts = List.from(Cart.selectedProducts);
+
+                    // Clear the cart before navigation
+                    setState(() {
+                      Cart.selectedProducts.clear();
+                    });
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ConfirmationPage(
+                          orderValue: orderValue,
+                          quantity: calculateTotalAmount(),
+                          selectedProducts: orderedProducts, // Pass a copy of the products
+                        ),
+                      ),
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Cart.selectedProducts.isEmpty ? const Color.fromARGB(255, 209, 205, 205) : const Color.fromARGB(255, 199, 124, 11),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
+            ),
+            child: const Text(
+              'Place Order',
+              style: TextStyle(fontSize: 16.0, color: Color.fromARGB(255, 24, 4, 4)),
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: const Color.fromARGB(255, 12, 14, 13),
+        unselectedItemColor: const Color.fromARGB(255, 7, 7, 7),
+        type: BottomNavigationBarType.fixed,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
+          
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(  // All Products Item
+            icon: Icon(Icons.view_list),
+            label: 'All Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'My Account',
           ),
         ],
       ),
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
 >>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
+=======
+}
+>>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
