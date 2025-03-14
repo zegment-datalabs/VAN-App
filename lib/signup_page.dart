@@ -122,17 +122,35 @@ Future<String?> _uploadImage(String userId) async {
   }
 }
 
+<<<<<<< Updated upstream
   // Sign-Up Function
+=======
+  // Function to save user data to SharedPreferences
+  void _saveUserData(String userName, String email) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', userName);  // Save the name
+    await prefs.setString('emailOrphone', email); // Save the email
+  }
+
+ // Sign-Up Function
+>>>>>>> Stashed changes
 void _signUp() async {
   if (_formKey.currentState!.validate()) {
     try {
       final inputText = _emailOrPhoneController.text.trim();
 
+<<<<<<< Updated upstream
       // Step 1: Validate email format OR phone number
       if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText) &&
           !RegExp(r'^[0-9]{10}$').hasMatch(inputText)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Enter a valid email or phone number.')),
+=======
+      // Step 1: Validate email format
+      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(inputText)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid email address.')),
+>>>>>>> Stashed changes
         );
         return;
       }
@@ -146,6 +164,7 @@ void _signUp() async {
       final User? user = userCredential.user;
 
       if (user != null) {
+<<<<<<< Updated upstream
         final userId = user.uid;
 
         // Step 3: Upload profile image if selected
@@ -168,6 +187,37 @@ void _signUp() async {
         // **Step 6: Save user details to SharedPreferences**
         _saveUserData(_nameController.text.trim(), inputText, profileImageUrl);
 
+=======
+        // Step 3: Send email verification
+        await user.sendEmailVerification();
+
+        // Step 4: Save additional user details to Firestore
+        final userId = user.uid;
+        final profileImageUrl = await _uploadImage(userId);
+
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'name': _nameController.text.trim(),
+          'emailOrPhone': inputText,
+          'profileImageUrl': profileImageUrl,
+          'isVerified': false, // Track verification status
+        });
+
+        // Step 5: Fetch user data from Firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        String userName = "User"; // Default name
+        if (userDoc.exists) {
+          userName = userDoc['name']; // Fetch username from Firestore
+        }
+
+        // Step 6: Save user details to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('emailOrphone', user.email ?? '');
+        await prefs.setString('name', userName); // Save username
+        await prefs.setString('profilePicPath', user.photoURL ?? 'https://via.placeholder.com/150');
+
+        print("Saved Username: $userName");
+        print("Saved Email/Phone: ${user.email}");
+>>>>>>> Stashed changes
 
         // Step 7: Inform user and navigate
         ScaffoldMessenger.of(context).showSnackBar(
@@ -180,15 +230,27 @@ void _signUp() async {
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage;
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
       if (e.code == 'email-already-in-use') {
         errorMessage = 'This email is already in use.';
       } else if (e.code == 'weak-password') {
         errorMessage = 'Password is too weak.';
       } else if (e.code == 'invalid-email') {
+<<<<<<< Updated upstream
         errorMessage = 'Invalid email format.';
       } else {
         errorMessage = 'An error occurred. Please try again.';
       }
+=======
+        errorMessage = 'Invalid email format. Please enter a correct email address.';
+      } else {
+        errorMessage = 'An error occurred. Please try again.';
+      }
+
+>>>>>>> Stashed changes
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
@@ -208,7 +270,11 @@ void _signUp() async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+<<<<<<< Updated upstream
         backgroundColor: const Color.fromARGB(255, 185, 92, 15),
+=======
+        backgroundColor:const Color.fromARGB(255, 185, 92, 15),
+>>>>>>> Stashed changes
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
