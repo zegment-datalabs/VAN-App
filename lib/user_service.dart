@@ -7,7 +7,7 @@ Future<String> getUsername(String userId) async {
       .get();
 
   if (snapshot.exists) {
-    return snapshot['name'];  // Fetching the 'name' field
+    return snapshot['username'];  // Fetching the 'username' field
   } else {
     return 'User not found';
   }

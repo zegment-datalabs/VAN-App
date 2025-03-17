@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class MyOrdersPage extends StatefulWidget {
+  const MyOrdersPage({super.key});
+
   @override
   _MyOrdersPageState createState() => _MyOrdersPageState();
 }
@@ -30,7 +32,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     try {
       QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
           .collection('order_masters')
-          .where('customerId', isEqualTo: user.email)
+          .where('customer_id')
           .get();
 
       setState(() {
@@ -47,11 +49,11 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchOrderProducts(String orderId) async {
+  Future<List<Map<String, dynamic>>> fetchOrderProducts(String order_id) async {
     try {
       QuerySnapshot productSnapshot = await FirebaseFirestore.instance
           .collection('order_masters')
-          .doc(orderId)
+          .doc(order_id)
           .collection('order_details')
           .get();
 
@@ -61,7 +63,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         return productData;
       }).toList();
     } catch (e) {
-      print("Error fetching products for order $orderId: $e");
+      print("Error fetching products for order $order_id: $e");
       return [];
     }
   }
@@ -70,9 +72,9 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Orders"),
-        backgroundColor:const Color.fromARGB(255, 185, 92, 15),
-        centerTitle: true,
+         iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.teal,
+        title: const Text('My Orders', style: TextStyle(color: Colors.white)),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -101,7 +103,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Order ID: ${order['orderId']}',
+                              'Order ID: ${order['order_id']}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -113,7 +115,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Order Total: ₹${order['orderValue']}',
+                                  'Order Total: ₹${order['order_value']}',
                                   style: const TextStyle(fontSize: 14),
                                 ),
                                 Chip(
@@ -125,14 +127,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Order Date: ${_formatDate(order['orderTime'])}',
+                              'Order Date: ${_formatDate(order['order_time'])}',
                               style: const TextStyle(fontSize: 14),
                             ),
                             const SizedBox(height: 8),
 
                             // Fetch and display the products for this order
                             FutureBuilder<List<Map<String, dynamic>>>(
-                              future: fetchOrderProducts(order['orderId']),
+                              future: fetchOrderProducts(order['order_id']),
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState == ConnectionState.waiting) {
                                   return const Center(child: CircularProgressIndicator());
@@ -173,7 +175,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                                             ],
                                           ),
                                         );
-                                      }).toList(),
+                                      }),
                                     ],
                                   );
                                 } else {

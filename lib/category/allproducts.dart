@@ -3,54 +3,41 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart';
 import 'package:van_app_demo/category/categorypage.dart';
-import 'package:van_app_demo/myorders_page.dart';
-import 'package:van_app_demo/login_page.dart';
 import 'package:van_app_demo/myaccount.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:van_app_demo/widgets/common_widgets.dart';
 
 class AllProductsPage extends StatefulWidget {
   const AllProductsPage({super.key});
 
   @override
-  _AllProductsPageState createState() => _AllProductsPageState();
-  
+  AllProductsPageState createState() => AllProductsPageState();
 }
 
-class _AllProductsPageState extends State<AllProductsPage> {
+class AllProductsPageState extends State<AllProductsPage> {
   Map<String, TextEditingController> controllers = {};
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> filteredProducts = [];
-   String searchQuery = '';
-  String _name = "User"; // Default name
-  bool isLoading = true;
-  int _selectedIndex = 0;
-<<<<<<< Updated upstream
+  String searchQuery = '';
+  String _username = "User"; // Default username
   String _profilePicUrl = "";
-=======
->>>>>>> Stashed changes
+  bool isLoading = true;
+  int _selectedIndex = 3;
 
-  
-
-  // Search functionality
-  TextEditingController searchController = TextEditingController();
+  TextEditingController searchController =
+      TextEditingController(); // Search functionality
   FocusNode searchFocusNode = FocusNode();
 
   // ScrollController for smooth scrolling
   final ScrollController _scrollController = ScrollController();
 
-  
-   Future<void> _loadUserData() async {
+  Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _name = prefs.getString('name') ?? 'User';
-<<<<<<< Updated upstream
-       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
-=======
->>>>>>> Stashed changes
+      _username = prefs.getString('username') ?? 'User';
+      _profilePicUrl = prefs.getString('profilePicPath') ?? "";
     });
   }
-
 
   Future<void> _loadProducts() async {
     setState(() {
@@ -65,9 +52,7 @@ class _AllProductsPageState extends State<AllProductsPage> {
 
       if (snapshot.docs.isNotEmpty) {
         setState(() {
-          products = snapshot.docs
-              .map((doc) => doc.data() as Map<String, dynamic>)
-              .toList();
+          products = snapshot.docs.map((doc) => doc.data()).toList();
           filteredProducts = products;
         });
 
@@ -89,53 +74,42 @@ class _AllProductsPageState extends State<AllProductsPage> {
     } catch (e) {
       print('Error loading products: $e');
     }
-
     setState(() {
       isLoading = false;
     });
   }
-  
+
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Prevent unnecessary navigation
+
     setState(() {
       _selectedIndex = index;
     });
 
-    switch (_selectedIndex) {
+    Widget nextPage;
+    switch (index) {
       case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        nextPage = const HomePage();
         break;
       case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CategoryPage()),
-        );
+        nextPage = const CategoryPage();
         break;
-    
-     case 2:
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const CartPage()),
-  );
-  break;
-   case 3:  // For All Products page
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AllProductsPage()),
-        );
+      case 2:
+        nextPage = const CartPage();
         break;
-   case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) =>  MyAccountPage()),
-        );
+      case 3:
+        return; // Already on AllProductsPage, do nothing
+      case 4:
+        nextPage = const MyAccountPage();
         break;
-
       default:
-        break;
+        return;
     }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => nextPage),
+    );
   }
 
   // Function to filter products based on search query
@@ -146,12 +120,10 @@ class _AllProductsPageState extends State<AllProductsPage> {
       });
     } else {
       setState(() {
-        filteredProducts = products
-            .where((product) {
-              final productName = product['title']?.toLowerCase() ?? '';
-              return productName.contains(query.toLowerCase());
-            })
-            .toList();
+        filteredProducts = products.where((product) {
+          final productName = product['title']?.toLowerCase() ?? '';
+          return productName.contains(query.toLowerCase());
+        }).toList();
       });
     }
   }
@@ -171,19 +143,23 @@ class _AllProductsPageState extends State<AllProductsPage> {
 
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
-      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.0') ?? 0.0;
+      final sellingPrice =
+          double.tryParse(product['selling_price']?.toString() ?? '0.0') ?? 0.0;
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       total += sellingPrice * quantity;
     }
 
-     return double.parse(total.toStringAsFixed(2)); // Ensure exactly 2 decimal places
+    return double.parse(
+        total.toStringAsFixed(2)); // Ensure exactly 2 decimal places
   }
 
   Future<void> _addToGlobalCart() async {
     for (var product in filteredProducts) {
       final productName = product['title'] ?? 'Unknown';
-      final sellingPrice = double.tryParse(product['selling_price']?.toString() ?? '0.00') ?? 0.0;
+      final sellingPrice =
+          double.tryParse(product['selling_price']?.toString() ?? '0.00') ??
+              0.0;
       final quantity = int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
 
       if (quantity > 0) {
@@ -211,12 +187,12 @@ class _AllProductsPageState extends State<AllProductsPage> {
     );
   }
 
- @override
-void initState() {
-  super.initState();
-  _loadUserData(); // Load username from SharedPreferences
-  _loadProducts();
-}
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(); // Load username from SharedPreferences
+    _loadProducts();
+  }
 
   @override
   void dispose() {
@@ -229,134 +205,19 @@ void initState() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Products'),
-        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
-        actions: [
-          IconButton(icon: const Icon(Icons.shopping_cart,color: Colors.black),
-            onPressed: () {
-              _resetQuantities();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartPage()),
-              );
-            },
-          ),
-          Builder(
-            builder: (context) {
-              return IconButton(
-icon: const Icon(Icons.menu,color: Colors.black),
-                onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
-              );
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: 'All Products',
+        onHomePressed: () => _onItemTapped(0),
+        onCartPressed: () {
+          _resetQuantities();
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const CartPage()));
+        },
       ),
-     endDrawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Color.fromARGB(255, 163, 94, 14)),
-              child: Column(
-                children: [
-<<<<<<< Updated upstream
-                  CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _profilePicUrl.isNotEmpty
-                      ? NetworkImage(_profilePicUrl)
-                      : null, // No image if URL is empty
-                  child: _profilePicUrl.isEmpty
-                      ? Icon(Icons.person, size: 30, color: Colors.white) // Placeholder icon
-                      : null, // No icon if URL is available
-                  backgroundColor: Colors.grey.shade400, // Background color for the icon
-                ),
-                  const SizedBox(height: 10.0),
-                  Text(
-                    _name, // Loaded name
-                    style: const TextStyle(color: Colors.black, fontSize: 15.0),
-=======
-                  const CircleAvatar(
-                    radius: 30.0,
-                    backgroundColor: Color.fromARGB(255, 182, 204, 209),
-                    child: Icon(Icons.person, size: 40.0, color: Colors.teal),
-                  ),
-                  const SizedBox(height: 10.0),
-                  Text(
-                    _name, // Loaded name
-                    style: const TextStyle(color: Colors.black, fontSize: 20.0),
->>>>>>> Stashed changes
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text('Cart'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Categories'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CategoryPage()),
-                );
-              },
-            ),
-              ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('All products'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AllProductsPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text('My Orders'),
-              onTap: () {
-                Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => MyOrdersPage()),
-            );
-
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                  Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
-                // Handle Logout action
-              },
-            ),
-          ],
-        ),
+      endDrawer: CustomDrawer(
+        profilePicUrl: _profilePicUrl,
+        username: _username,
+        onItemTapped: _onItemTapped,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -364,15 +225,9 @@ icon: const Icon(Icons.menu,color: Colors.black),
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextField(
+                  child: CustomSearchBar(
                     controller: searchController,
-                    focusNode: searchFocusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Search Products',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: _filterProducts,
+                    onSearch: _filterProducts,
                   ),
                 ),
                 Expanded(
@@ -390,7 +245,8 @@ icon: const Icon(Icons.menu,color: Colors.black),
                         return Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -427,36 +283,41 @@ icon: const Icon(Icons.menu,color: Colors.black),
                                           icon: const Icon(Icons.remove,
                                               color: Colors.red),
                                           onPressed: () {
-                                            setState(() {
-                                              final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                              productName]
-                                                          ?.text ??
-                                                      '0') ??
-                                                      0;
-                                              if (currentQuantity > 0) {
-                                                controllers[productName]?.text =
-                                                    (currentQuantity - 1)
-                                                        .toString();
-                                              }
-                                            });
+                                            setState(
+                                              () {
+                                                final currentQuantity =
+                                                    int.tryParse(controllers[
+                                                                    productName]
+                                                                ?.text ??
+                                                            '0') ??
+                                                        0;
+                                                if (currentQuantity > 0) {
+                                                  controllers[productName]
+                                                          ?.text =
+                                                      (currentQuantity - 1)
+                                                          .toString();
+                                                }
+                                              },
+                                            );
                                           },
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.add,
                                               color: Colors.green),
                                           onPressed: () {
-                                            setState(() {
-                                              final currentQuantity =
-                                                  int.tryParse(controllers[
-                                                              productName]
-                                                          ?.text ??
-                                                      '0') ??
-                                                      0;
-                                              controllers[productName]?.text =
-                                                  (currentQuantity + 1)
-                                                      .toString();
-                                            });
+                                            setState(
+                                              () {
+                                                final currentQuantity =
+                                                    int.tryParse(controllers[
+                                                                    productName]
+                                                                ?.text ??
+                                                            '0') ??
+                                                        0;
+                                                controllers[productName]?.text =
+                                                    (currentQuantity + 1)
+                                                        .toString();
+                                              },
+                                            );
                                           },
                                         ),
                                       ],
@@ -473,12 +334,10 @@ icon: const Icon(Icons.menu,color: Colors.black),
                                         decoration: const InputDecoration(
                                           border: OutlineInputBorder(),
                                           labelText: 'Qty',
-                                          contentPadding:
-                                              EdgeInsets.symmetric(
-                                                  vertical: 8.0),
+                                          contentPadding: EdgeInsets.symmetric(
+                                              vertical: 8.0),
                                         ),
-                                        style:
-                                            const TextStyle(fontSize: 14.0),
+                                        style: const TextStyle(fontSize: 14.0),
                                       ),
                                     ),
                                   ),
@@ -499,78 +358,40 @@ icon: const Icon(Icons.menu,color: Colors.black),
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     padding: const EdgeInsets.all(10.0),
-                    color: Colors.teal[100],
+                    color: Colors.white,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                       ElevatedButton(
-                            onPressed: () {
-                              _addToGlobalCart();
-                              _resetQuantities();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const CartPage()),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(255, 201, 103, 23),
-                              foregroundColor: Colors.black, // Set text color to black
-                            ),
-                            child: const Text('Buy Now'),
-                          ),
-                          ElevatedButton(
-                            onPressed: _addToGlobalCart,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.black, // Set text color to black
-                            ),
-                            child: const Text('Add to Cart'),
-                          ),
+                        CustomButton(
+  text: 'Buy Now',
+  onPressed: () {
+    _addToGlobalCart();
+    _resetQuantities();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CartPage()),
+    );
+  },
+  backgroundColor: Colors.deepOrange, // A vibrant orange for urgency
+),
 
-                        
+CustomButton(
+  text: 'Add to Cart',
+  onPressed: _addToGlobalCart,
+  backgroundColor: Colors.teal, // A fresh teal shade for a modern look
+),
+
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-<<<<<<< Updated upstream
-<<<<<<< HEAD
->>>>>>> 12dbdc151dfc2cdcfdcf54d59090552f704053de
-=======
-=======
->>>>>>> Stashed changes
-             bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20.0),
-            topRight: Radius.circular(20.0),
-          ),
-          boxShadow: [BoxShadow(color: Color.fromARGB(31, 24, 211, 55), blurRadius: 5.0)],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          selectedItemColor: const Color.fromARGB(255, 12, 14, 13),
-          unselectedItemColor: const Color.fromARGB(255, 7, 7, 7),
-          type: BottomNavigationBarType.fixed,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.home),label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.category),label: 'Category'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_cart),label: 'Cart'),
-            BottomNavigationBarItem(icon: Icon(Icons.view_list),label: 'All Products'),
-            BottomNavigationBarItem(icon: Icon(Icons.person),label: 'My Account'),
-               // BottomNavigationBarItem(
-            //   icon: Icon(Icons.assignment),
-            //   label: 'Orders',
-            // ),
-          ],
-        ),
-             ),
-<<<<<<< Updated upstream
->>>>>>> 29ec9781d997bf89ddc71afc1f59489122662828
-=======
->>>>>>> Stashed changes
+      // Use Custom Bottom Navigation
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+      ),
     );
   }
 }

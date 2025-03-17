@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'category/categorypage.dart';
+import 'package:van_app_demo/forgot_password_page.dart';
+import 'package:van_app_demo/homepage.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,29 +18,30 @@ class _LoginPageState extends State<LoginPage> {
   final _emailPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-<<<<<<< Updated upstream
   bool _isLoading = false;
-=======
-  bool _isLoading = false; // Added loading state
->>>>>>> Stashed changes
-
   String? _emailError;
   String? _passwordError;
+  String? _lastLogin;
 
-<<<<<<< Updated upstream
+
+ @override
+  void initState() {
+    super.initState();
+    _loadLastLogin();
+  }
+
+  Future<void> _loadLastLogin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _lastLogin = prefs.getString('lastLogin');
+    });
+  }
   // Handle Login
-=======
-  // Handle Login Functionality
->>>>>>> Stashed changes
   void _login() async {
     setState(() {
       _emailError = null;
       _passwordError = null;
-<<<<<<< Updated upstream
       _isLoading = true;
-=======
-      _isLoading = true; // Show loading
->>>>>>> Stashed changes
     });
 
     if (_formKey.currentState!.validate()) {
@@ -55,12 +57,9 @@ class _LoginPageState extends State<LoginPage> {
           return;
         }
 
-<<<<<<< Updated upstream
-       // Firebase Authentication Sign-In
-=======
         // Firebase Authentication Sign-In
->>>>>>> Stashed changes
-        final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: inputText,
           password: _passwordController.text.trim(),
         );
@@ -72,7 +71,8 @@ class _LoginPageState extends State<LoginPage> {
           if (!user.emailVerified) {
             await user.sendEmailVerification();
             setState(() {
-              _emailError = 'Email not verified. A verification email has been sent. Please verify and try again.';
+              _emailError =
+                  'Email not verified. A verification email has been sent. Please verify and try again.';
               _isLoading = false;
             });
 
@@ -83,53 +83,56 @@ class _LoginPageState extends State<LoginPage> {
 
           final userId = user.uid;
 
+          
+
+          // Get Current Timestamp
+          Timestamp lastLoginTimestamp = Timestamp.now();
+
           // Fetch user data from Firestore
-          DocumentSnapshot userDoc =
-              await FirebaseFirestore.instance.collection('users').doc(userId).get();
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
+          DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(userId);
 
-          String userName = "User"; // Default name
-<<<<<<< Updated upstream
+          String userName = "User"; // Default username
           String profileImageUrl = ""; // Default profile image
+          //String? lastLoginTime;
+          
+          
 
           if (userDoc.exists) {
-            userName = userDoc['name'] ?? "User"; // Fetch username from Firestore
-            profileImageUrl = userDoc['profileImageUrl'] ?? ""; // Fetch profile image URL
-=======
-          if (userDoc.exists) {
-            userName = userDoc['name']; // Fetch username from Firestore
->>>>>>> Stashed changes
+            userName =
+                userDoc['username'] ?? "User"; // Fetch userusername from Firestore
+            profileImageUrl =
+                userDoc['profileImageUrl'] ?? ""; // Fetch profile image URL
           }
+
+
+        // Update Last Login Date in Firestore
+        await userRef.update({
+          'last_loggedin': lastLoginTimestamp,
+             'isVerified': true,
+        });
 
           // Save user details to SharedPreferences
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString('emailOrphone', user.email ?? '');
-<<<<<<< Updated upstream
-          await prefs.setString('name', userName);
+          await prefs.setString('username', userName);
           await prefs.setString('profilePicPath', profileImageUrl);
 
           // print("✅ Saved Username: $userName");
           // print("✅ Saved Profile Pic URL: $profileImageUrl");
-=======
-          await prefs.setString('name', userName); // Save username
-          await prefs.setString('profilePicPath', user.photoURL ?? '');
-
-          print("Saved Username: $userName");
-          print("Saved Email/Phone: ${user.email}");
->>>>>>> Stashed changes
 
           // Navigate to the Category Page
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CategoryPage()),
+            MaterialPageRoute(builder: (context) => const HomePage()),
           );
         }
       } on FirebaseAuthException catch (e) {
         setState(() {
-<<<<<<< Updated upstream
           _isLoading = false;
-=======
-          _isLoading = false; // Hide loading
->>>>>>> Stashed changes
           if (e.code == 'user-not-found') {
             _emailError = 'No user found for that email.';
           } else if (e.code == 'wrong-password') {
@@ -141,11 +144,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } else {
       setState(() {
-<<<<<<< Updated upstream
         _isLoading = false;
-=======
-        _isLoading = false; // Hide loading
->>>>>>> Stashed changes
       });
     }
   }
@@ -154,9 +153,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 185, 92, 15),
+        backgroundColor: Colors.teal,
         elevation: 0,
-        title: const Text('Login'),
+        title: const Text('Login',style: TextStyle(color: Colors.white)),
         automaticallyImplyLeading: false, // Removes the back arrow
       ),
       body: Padding(
@@ -197,7 +196,9 @@ class _LoginPageState extends State<LoginPage> {
                     prefixIcon: const Icon(Icons.lock, color: Colors.black),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -221,10 +222,11 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Login Button
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _login, // Disable button if loading
+                  onPressed:
+                      _isLoading ? null : _login, // Disable button if loading
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: const Color.fromARGB(255, 185, 92, 15),
+                    backgroundColor: Colors.teal,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -237,11 +239,13 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                 ),
                 const SizedBox(height: 10.0),
-
-                // Forgot Password
                 TextButton(
                   onPressed: () {
-                    // Implement forgot password functionality
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordPage()),
+                    );
                   },
                   child: const Text(
                     'Forgot Password?',
@@ -259,7 +263,8 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SignUpPage()),
+                          MaterialPageRoute(
+                              builder: (context) => const SignUpPage()),
                         );
                       },
                       child: const Text('Sign Up'),

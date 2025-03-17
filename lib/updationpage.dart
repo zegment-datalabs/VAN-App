@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:van_app_demo/bottomsheet.dart';
+import 'package:van_app_demo/widgets/common_widgets.dart';
+
 
 class UpdationPage extends StatefulWidget {
+  const UpdationPage({super.key});
+
   @override
   _UpdationPageState createState() => _UpdationPageState();
 }
@@ -27,28 +31,39 @@ class _UpdationPageState extends State<UpdationPage> {
   }
 
   Future<void> fetchOrderIds() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
 
-    QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
-        .collection('order_masters')
-        .where('customerId', isEqualTo: user.email)
-        .get();
+  // Get customer_id of the logged-in user
+  DocumentSnapshot customerSnapshot = await FirebaseFirestore.instance
+      .collection('customer')
+      .where('customer_email', isEqualTo: user.email) // Assuming customer email matches FirebaseAuth email
+      .limit(1)
+      .get()
+      .then((snapshot) => snapshot.docs.first);
 
-    setState(() {
-      orderIds = ordersSnapshot.docs.map((doc) => doc.id).toList();
-    });
-  }
+  int userCustomerId = customerSnapshot['customer_id'];
 
-  Future<void> fetchOrderDetails(String orderId) async {
+  QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
+      .collection('order_masters')
+      .where('customer_id', isEqualTo: userCustomerId) // Filter by customer_id
+      .get();
+
+  setState(() {
+    orderIds = ordersSnapshot.docs.map((doc) => doc.id).toList();
+  });
+}
+
+
+  Future<void> fetchOrderDetails(String order_id) async {
     DocumentSnapshot orderSnapshot = await FirebaseFirestore.instance
         .collection('order_masters')
-        .doc(orderId)
+        .doc(order_id)
         .get();
 
     QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
         .collection('order_masters')
-        .doc(orderId)
+        .doc(order_id)
         .collection('order_details')
         .get();
 
@@ -78,7 +93,7 @@ class _UpdationPageState extends State<UpdationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${newProducts.length} product(s) added!'),
-        duration: Duration(seconds: 1),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -86,7 +101,7 @@ class _UpdationPageState extends State<UpdationPage> {
  double calculateTotalAmount() {
   double totalAmount = 0.0;
   for (var item in orderItems) {
-    double price = double.tryParse(item['sellingprice']?.toString() ?? '0.0') ?? 0.0;
+    double price = double.tryParse(item['selling_price']?.toString() ?? '0.0') ?? 0.0;
     double quantity = (item['quantity'] as num).toDouble(); // Ensure it's double
     totalAmount += price * quantity;
   }
@@ -119,15 +134,15 @@ String calculateTotalQuantity() {
     );
   }
 
- Future<void> updateOrder(String orderId) async {
+ Future<void> updateOrder(String order_id) async {
   try {
     DocumentReference orderDocRef =
-        FirebaseFirestore.instance.collection('order_masters').doc(orderId);
+        FirebaseFirestore.instance.collection('order_masters').doc(order_id);
 
     await orderDocRef.update({
-      'orderValue': calculateTotalAmount(),
+      'order_value': calculateTotalAmount(),
       'status': 'Updated',
-      'orderTime': FieldValue.serverTimestamp(),
+      'order_time': FieldValue.serverTimestamp(),
     });
 
     for (var item in orderItems) {
@@ -139,7 +154,7 @@ String calculateTotalQuantity() {
 
       QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
           .collection('order_masters')
-          .doc(orderId)
+          .doc(order_id)
           .collection('order_details')
           .where('Product Name', isEqualTo: title)
           .get();
@@ -156,21 +171,21 @@ String calculateTotalQuantity() {
         // Insert new product
         await FirebaseFirestore.instance
             .collection('order_masters')
-            .doc(orderId)
+            .doc(order_id)
             .collection('order_details')
             .add({
-          'orderId': orderId,
+          'order_id': order_id,
           'Product Name': item['Product Name'],
           'Category Name': item['Category Name'],
           'quantity': item['quantity'],
-          'sellingprice': item['sellingprice'] ?? 0.0,
+          'selling_price': item['selling_price'] ?? 0.0,
         });
       } else {
         // Update existing product
         DocumentReference orderItemDocRef = orderItemsSnapshot.docs.first.reference;
         await orderItemDocRef.update({
           'quantity': item['quantity'],
-          'sellingprice': item['sellingprice'],
+          'selling_price': item['selling_price'],
           'Category Name': item['Category Name'],
         });
       }
@@ -182,7 +197,7 @@ String calculateTotalQuantity() {
 
     QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
         .collection('order_masters')
-        .doc(orderId)
+        .doc(order_id)
         .collection('order_details')
         .get();
 
@@ -202,10 +217,10 @@ String calculateTotalQuantity() {
     print("Error during update: $e");
   }
 }
-Future<void> cancelOrder(String orderId) async {
+Future<void> cancelOrder(String order_id) async {
   try {
     DocumentReference orderDocRef =
-        FirebaseFirestore.instance.collection('order_masters').doc(orderId);
+        FirebaseFirestore.instance.collection('order_masters').doc(order_id);
 
     // Delete the order document
     await orderDocRef.delete();
@@ -213,7 +228,7 @@ Future<void> cancelOrder(String orderId) async {
     // Optionally, delete the associated order details (order_items) as well.
     QuerySnapshot orderItemsSnapshot = await FirebaseFirestore.instance
         .collection('order_masters')
-        .doc(orderId)
+        .doc(order_id)
         .collection('order_details')
         .get();
 
@@ -247,10 +262,10 @@ Widget build(BuildContext context) {
   }).toList();
 
   return Scaffold(
-    appBar: AppBar(
-      title: const Text('Update/Cancel Order'),
-      backgroundColor: Colors.teal,
-      centerTitle: true,
+      appBar: AppBar(
+         iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.teal,
+        title: const Text('Update/Cancel Orders', style: TextStyle(color: Colors.white)),
       actions: [
         IconButton(
           icon: const Icon(Icons.search),
@@ -266,6 +281,7 @@ Widget build(BuildContext context) {
             });
           },
         ),
+        
         IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: refreshData,
@@ -286,10 +302,10 @@ Widget build(BuildContext context) {
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            items: orderIds.map((orderId) {
+            items: orderIds.map((order_id) {
               return DropdownMenuItem(
-                value: orderId,
-                child: Text(orderId, style: const TextStyle(fontWeight: FontWeight.bold)),
+                value: order_id,
+                child: Text(order_id, style: const TextStyle(fontWeight: FontWeight.bold)),
               );
             }).toList(),
             onChanged: (value) {
@@ -312,10 +328,10 @@ Widget build(BuildContext context) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Order ID: ${orderDetails!['orderId']}',
+                    Text('Order ID: ${orderDetails!['order_id']}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('Customer ID: ${orderDetails!['customerId']}'),
-                    Text('Van ID: ${orderDetails!['vanId']}'),
+                    Text('Customer ID: ${orderDetails!['customer_id']}'),
+                    Text('van_id: ${orderDetails!['van_id']}'),
                     Text('Order Total: ₹${calculateTotalAmount().toStringAsFixed(2)}'),
                     Text('Status: ${orderDetails!['status']}'),
                   ],
@@ -331,13 +347,17 @@ Widget build(BuildContext context) {
                   focusNode: searchFocusNode,
                   decoration: InputDecoration(
                     hintText: 'Search products...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.teal),
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30.0),
+                      borderSide: const BorderSide(color: Colors.teal),
                     ),
                     suffixIcon: searchFocusNode.hasFocus
                         ? IconButton(
@@ -455,7 +475,7 @@ Widget build(BuildContext context) {
                           ],
                         ),
                         Text(
-                          '₹${(item['sellingprice'] ?? 0.0) * item['quantity']}',
+                          '₹${(item['selling_price'] ?? 0.0) * item['quantity']}',
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                         ),
                       ],
@@ -471,76 +491,52 @@ Widget build(BuildContext context) {
           ],
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (selectedOrderId != null) {
-                      updateOrder(selectedOrderId!);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please select an order to update.')),
-                      );
-                    }
-                  },
-                  child: const Text('Update Order'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal, // Gradient Color from teal to light blue
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                    textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    shadowColor: Colors.tealAccent,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (selectedOrderId != null) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Confirm Cancellation"),
-                          content: const Text("Are you sure you want to cancel and delete this order?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context); 
-                              },
-                              child: const Text("Cancel"),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context); 
-                                cancelOrder(selectedOrderId!);  
-                              },
-                              child: const Text("Delete", style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please select an order to cancel.')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent, // Gradient Color for Cancel Button
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                    textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    shadowColor: Colors.orange,
-                  ),
-                  child: const Text('Cancel Order'),
-                ),
-              ),
-            ],
-          ),
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    // Cancel Order Button with Confirmation Dialog
+    Expanded(
+      child: CustomButton(
+        text: 'Cancel Order',
+        backgroundColor: Colors.orangeAccent,
+        showConfirmationDialog: true,
+        confirmationTitle: "Confirm Cancellation",
+        confirmationMessage: "Are you sure you want to cancel and delete this order?",
+        onConfirm: () {
+          if (selectedOrderId != null) {
+            cancelOrder(selectedOrderId!);
+          }
+        },
+        onPressed: () {
+          if (selectedOrderId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select an order to cancel.')),
+            );
+          }
+        },
+      ),
+    ),
+
+    const SizedBox(width: 10),
+
+    // Update Order Button
+    Expanded(
+      child: CustomButton(
+        text: 'Update Order',
+        backgroundColor: Colors.teal,
+        onPressed: () {
+          if (selectedOrderId != null) {
+            updateOrder(selectedOrderId!);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select an order to update.')),
+            );
+          }
+        },
+      ),
+    ),
+  ],
+),
+
         ],
       ),
     ),
@@ -582,8 +578,8 @@ Widget build(BuildContext context) {
                 _updateProductList(newProducts);
               }
             },
-      child: Icon(Icons.add),
       backgroundColor: selectedOrderId == null ? Colors.grey : Colors.teal,
+      child: const Icon(Icons.add),
     ),
   );
 }
