@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:van_app_demo/widgets/common_widgets.dart';
+
 
 class Bottomsheet extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onAddProduct;
   final List<Map<String, dynamic>> orderedProducts;
 
   const Bottomsheet({
-    Key? key,
+    super.key,
     required this.onAddProduct,
     required this.orderedProducts,
-  }) : super(key: key);
+  });
 
   @override
   BottomsheetState createState() => BottomsheetState();
@@ -43,9 +45,7 @@ class BottomsheetState extends State<Bottomsheet> {
 
       if (snapshot.docs.isNotEmpty) {
         setState(() {
-          products = snapshot.docs
-              .map((doc) => doc.data() as Map<String, dynamic>)
-              .toList();
+          products = snapshot.docs.map((doc) => doc.data()).toList();
           filteredProducts = products;
         });
 
@@ -66,11 +66,13 @@ class BottomsheetState extends State<Bottomsheet> {
             orElse: () => {},
           );
 
-          int initialQuantity =
-              (orderedProduct.isNotEmpty) ? (orderedProduct['quantity'] ?? 0) : 0;
+          int initialQuantity = (orderedProduct.isNotEmpty)
+              ? (orderedProduct['quantity'] ?? 0)
+              : 0;
 
           if (!controllers.containsKey(productName)) {
-            controllers[productName] = TextEditingController(text: '$initialQuantity');
+            controllers[productName] =
+                TextEditingController(text: '$initialQuantity');
           }
         }
       }
@@ -111,7 +113,7 @@ class BottomsheetState extends State<Bottomsheet> {
         selectedProducts.add({
           'Product Name': productName,
           'Category Name': product['category'] ?? 'Unknown',
-          'sellingprice': product['selling_price'] ?? 0.0,
+          'selling_price': product['selling_price'] ?? 0.0,
           'quantity': quantity,
         });
       }
@@ -151,19 +153,15 @@ class BottomsheetState extends State<Bottomsheet> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: searchController,
-                    focusNode: searchFocusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Search Products',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: _filterProducts,
-                  ),
-                ),
+              Padding(
+  padding: const EdgeInsets.all(8.0),
+  child: CustomSearchBar(
+    controller: searchController,
+    focusNode: searchFocusNode, // Pass the existing focus node
+    onSearch: _filterProducts,
+  ),
+),
+
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -177,23 +175,27 @@ class BottomsheetState extends State<Bottomsheet> {
                             product['selling_price']?.toString() ?? '0.00';
 
                         // Find ordered product (if exists)
-                        final orderedProduct = widget.orderedProducts.firstWhere(
+                        final orderedProduct =
+                            widget.orderedProducts.firstWhere(
                           (ordered) => ordered['Product Name'] == productName,
                           orElse: () => {},
                         );
-                        final minQuantity =
-                            orderedProduct.isNotEmpty ? orderedProduct['quantity'] : 0;
+                        final minQuantity = orderedProduct.isNotEmpty
+                            ? orderedProduct['quantity']
+                            : 0;
 
                         return Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2.0),
                               child: Row(
                                 children: [
                                   Expanded(
                                     flex: 3,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           productName,
@@ -203,7 +205,7 @@ class BottomsheetState extends State<Bottomsheet> {
                                           ),
                                         ),
                                         Text(
-                                          '\₹ $sellingPrice',
+                                          '₹ $sellingPrice',
                                           style: const TextStyle(
                                             fontSize: 14.0,
                                             fontWeight: FontWeight.bold,
@@ -216,49 +218,68 @@ class BottomsheetState extends State<Bottomsheet> {
                                   Expanded(
                                     flex: 2,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.remove, color: Colors.red),
+                                          icon: const Icon(Icons.remove,
+                                              color: Colors.red),
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
-                                              if (currentQuantity > minQuantity) {
+                                                  int.tryParse(controllers[
+                                                                  productName]
+                                                              ?.text ??
+                                                          '0') ??
+                                                      0;
+                                              if (currentQuantity >
+                                                  minQuantity) {
                                                 controllers[productName]?.text =
-                                                    (currentQuantity - 1).toString();
+                                                    (currentQuantity - 1)
+                                                        .toString();
                                               }
                                             });
                                           },
                                         ),
                                         // Quantity TextField (Box)
                                         SizedBox(
-                                          width: 50, // Set a width for the quantity box
+                                          width:
+                                              50, // Set a width for the quantity box
                                           child: TextField(
-                                            controller: controllers[productName],
+                                            controller:
+                                                controllers[productName],
                                             keyboardType: TextInputType.number,
                                             textAlign: TextAlign.center,
                                             decoration: const InputDecoration(
                                               border: OutlineInputBorder(),
-                                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                      vertical: 8),
                                             ),
                                             onChanged: (value) {
                                               setState(() {
                                                 // Validate input to ensure only numbers are entered
                                                 controllers[productName]?.text =
-                                                    value.replaceAll(RegExp(r'[^0-9]'), '');
+                                                    value.replaceAll(
+                                                        RegExp(r'[^0-9]'), '');
                                               });
                                             },
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.add, color: Colors.green),
+                                          icon: const Icon(Icons.add,
+                                              color: Colors.green),
                                           onPressed: () {
                                             setState(() {
                                               final currentQuantity =
-                                                  int.tryParse(controllers[productName]?.text ?? '0') ?? 0;
+                                                  int.tryParse(controllers[
+                                                                  productName]
+                                                              ?.text ??
+                                                          '0') ??
+                                                      0;
                                               controllers[productName]?.text =
-                                                  (currentQuantity + 1).toString();
+                                                  (currentQuantity + 1)
+                                                      .toString();
                                             });
                                           },
                                         ),
@@ -277,11 +298,12 @@ class BottomsheetState extends State<Bottomsheet> {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(10.0),
-                  child: ElevatedButton(
-                    onPressed: _updateProductList,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                    child: const Text('Add'),
-                  ),
+                  child:CustomButton(
+  text: 'Add',
+  backgroundColor: Colors.blue,
+  onPressed: _updateProductList,
+),
+
                 ),
               ],
             ),

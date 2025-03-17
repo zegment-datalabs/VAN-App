@@ -1,16 +1,33 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:van_app_demo/cart_page.dart';
 import 'package:van_app_demo/homepage.dart';
+import 'package:van_app_demo/category/categorypage.dart';
+import 'package:van_app_demo/category/allproducts.dart';
+import 'package:van_app_demo/widgets/common_widgets.dart';
 
 class MyAccountPage extends StatefulWidget {
+  const MyAccountPage({super.key});
+
   @override
   _MyAccountPageState createState() => _MyAccountPageState();
 }
 
 class _MyAccountPageState extends State<MyAccountPage> {
-  String _name = "";
+  String _username = "";
   String _emailOrPhone = "";
-   String _profilePicUrl = "";
+  String _profilePicUrl = "";
+  String _contact = "";
+  bool _isEditing = false;
+  int _selectedIndex = 4;
+
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _contactController = TextEditingController();
 
   @override
   void initState() {
@@ -21,95 +38,333 @@ class _MyAccountPageState extends State<MyAccountPage> {
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _name = prefs.getString('name') ?? 'User';
+      _username = prefs.getString('username') ?? 'User';
       _emailOrPhone = prefs.getString('emailOrphone') ?? 'Not Available';
-       _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+      _profilePicUrl = prefs.getString('profilePicPath') ?? "";
+      _contact = prefs.getString('contact_number') ?? "Not Available";
 
+      // Set text field controllers
+      _usernameController.text = _username;
+      _contactController.text = _contact;
     });
+  }
+
+  Future<void> _saveUserData() async {
+    String? userEmail = FirebaseAuth.instance.currentUser?.email;
+
+    if (userEmail != null) {
+      QuerySnapshot customerSnapshot = await FirebaseFirestore.instance
+          .collection('customer')
+          .where('customer_email', isEqualTo: userEmail)
+          .limit(1)
+          .get();
+
+      if (customerSnapshot.docs.isNotEmpty) {
+        String customerId = customerSnapshot.docs.first.id;
+
+        // Update Firebase customer collection
+        await FirebaseFirestore.instance
+            .collection('customer')
+            .doc(customerId)
+            .update({
+          'customer_name': _usernameController.text,
+          'customer_contact': _contactController.text,
+          'customer_image_url': _profilePicUrl,
+        });
+
+        // Update users collection
+        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('emailOrPhone', isEqualTo: userEmail)
+            .limit(1)
+            .get();
+
+        if (userSnapshot.docs.isNotEmpty) {
+          String userId = userSnapshot.docs.first.id;
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({
+            'username': _usernameController.text,
+            'contact_number': _contactController.text,
+            'profileImageUrl': _profilePicUrl,
+          });
+        }
+      }
+    }
+
+    // Update shared preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('username', _usernameController.text);
+    prefs.setString('contact_number', _contactController.text);
+    prefs.setString('profilePicPath', _profilePicUrl);
+
+    setState(() {
+      _username = _usernameController.text;
+      _contact = _contactController.text;
+      _isEditing = false; // Switch back to profile view
+    });
+  }
+
+  Future<void> _pickImageOptions() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text("Take a Photo"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text("Choose from Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              if (_profilePicUrl.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text("Remove Picture"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeProfilePicture();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: source);
+
+    if (image != null) {
+      File file = File(image.path);
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child("user_profiles/$userId.jpg");
+
+      UploadTask uploadTask = storageRef.putFile(file);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _profilePicUrl = downloadUrl;
+      });
+
+      _updateProfilePictureInFirebase(downloadUrl);
+    }
+  }
+
+  Future<void> _removeProfilePicture() async {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    Reference storageRef =
+        FirebaseStorage.instance.ref().child("user_profiles/$userId.jpg");
+
+    try {
+      await storageRef.delete();
+    } catch (e) {
+      print("Error deleting profile picture: $e");
+    }
+
+    setState(() {
+      _profilePicUrl = "";
+    });
+
+    _updateProfilePictureInFirebase("");
+  }
+
+  Future<void> _updateProfilePictureInFirebase(String newUrl) async {
+    String? userEmail = FirebaseAuth.instance.currentUser?.email;
+
+    if (userEmail != null) {
+      QuerySnapshot customerSnapshot = await FirebaseFirestore.instance
+          .collection('customer')
+          .where('customer_email', isEqualTo: userEmail)
+          .limit(1)
+          .get();
+
+      if (customerSnapshot.docs.isNotEmpty) {
+        String customerId = customerSnapshot.docs.first.id;
+        await FirebaseFirestore.instance
+            .collection('customer')
+            .doc(customerId)
+            .update({
+          'customer_image_url': newUrl,
+        });
+
+        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('emailOrPhone', isEqualTo: userEmail)
+            .limit(1)
+            .get();
+
+        if (userSnapshot.docs.isNotEmpty) {
+          String userId = userSnapshot.docs.first.id;
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({
+            'profileImageUrl': newUrl,
+          });
+        }
+      }
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('profilePicPath', newUrl);
+  }
+
+  void _onItemTapped(int index) {
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => const HomePage()));
+        break;
+      case 1:
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => const CategoryPage()));
+        break;
+      case 2:
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => const CartPage()));
+        break;
+      case 3:
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => const AllProductsPage()));
+        break;
+      case 4:
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => const MyAccountPage()));
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-    appBar: AppBar(
-  title: Text("My Account"),
-  backgroundColor: Colors.blueGrey,
-  elevation: 0,
-  leading: IconButton(
-    icon: Icon(Icons.arrow_back),
-    onPressed: () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
-    },
-  ),
-),
-
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('My Account', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.teal,
+      ),
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 40),
-            decoration: BoxDecoration(
-              color: Colors.blueGrey,
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            decoration: const BoxDecoration(
+              color: Colors.teal,
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30)),
             ),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _profilePicUrl.isNotEmpty
-                      ? NetworkImage(_profilePicUrl)
-                      : null, // No image if URL is empty
-                  child: _profilePicUrl.isEmpty
-                      ? Icon(Icons.person, size: 50, color: Colors.white) // Placeholder icon
-                      : null, // No icon if URL is available
-                  backgroundColor: Colors.grey.shade400, // Background color for the icon
-                ),
-                SizedBox(height: 10),
-                Text(
-                  _name,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                GestureDetector(
+  onTap: _pickImageOptions,
+  child: Stack(
+    children: [
+      CircleAvatar(
+        radius: 50,
+        backgroundImage: _profilePicUrl.isNotEmpty
+            ? NetworkImage(_profilePicUrl)
+            : const AssetImage("assets/default_profile.png") as ImageProvider,
+      ),
+      if (_isEditing) // Show camera icon only when editing
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+          ),
+        ),
+    ],
+  ),
+),
+
+                const SizedBox(height: 10),
+                if (!_isEditing)
+                  Column(
+                    children: [
+                      Text(
+                        _username,
+                        style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _emailOrPhone,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70),
+                      ),
+                      // Text(
+                      //   _contact,
+                      //   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white70),
+                      // ),
+                    ],
                   ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  _emailOrPhone,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
-                ),
               ],
             ),
           ),
-          SizedBox(height: 20),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 20),
+          _isEditing
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _usernameController,
+                        decoration:
+                            const InputDecoration(labelText: "Username"),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _contactController,
+                        decoration:
+                            const InputDecoration(labelText: "Contact Number"),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 20),
+                      CustomButton(
+                        text: "Save",
+                        onPressed: _saveUserData,
+                        backgroundColor:
+                            Colors.teal, // Keep it consistent with your theme
+                      ),
+                    ],
+                  ),
+                )
+              : CustomButton(
+                  text: "Edit Profile",
+                  onPressed: () => setState(() => _isEditing = true),
+                  backgroundColor:
+                      Colors.teal, // Keep the same color for consistency
                 ),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
-              ),
-              onPressed: () {
-                // Navigate to edit profile page
-              },
-              child: Text("Edit Profile", style: TextStyle(fontSize: 16)),
-            ),
-          ),
         ],
       ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+          currentIndex: _selectedIndex, onItemTapped: _onItemTapped),
     );
   }
 }
